@@ -1,6 +1,8 @@
 mod looping_float;
 mod planet;
 mod planet_sticker;
+mod planet_villager;
+
 #[macro_use]
 extern crate approx;
 
@@ -28,7 +30,7 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
-        .add_plugins((planet_sticker::PlanetStickerPlugin,))
+        .add_plugins((planet_sticker::PlanetStickerPlugin, planet_villager::PlanetVillagerPlugin))
         .add_systems(Startup, (setup))
         .run();
 }
@@ -105,5 +107,10 @@ fn setup(
             planet: main_planet,
             position_degrees: LoopingFloat::new(45.),
         },
+        planet_villager::PlanetVillager {
+            current_state: planet_villager::PlanetVillagerState::Running,
+            current_destination: 270.
+
+        }
     ));
 }

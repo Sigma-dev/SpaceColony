@@ -1,6 +1,5 @@
 use std::fmt;
 use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
-use num_traits::Float;
 
 #[derive(Debug, Copy, Clone)]
 pub struct LoopingFloat<const MAX: u32> {
@@ -29,6 +28,22 @@ impl<const MAX: u32> LoopingFloat<MAX> {
 
     pub fn to_f32(self) -> f32 {
         self.value
+    }
+
+    pub fn difference(&self, other: f32) -> f32 {
+        let max = MAX as f32;
+        let delta = other - self.value;
+        let wrapped_delta = if delta > 0.0 {
+            delta - max
+        } else {
+            delta + max
+        };
+
+        if delta.abs() < wrapped_delta.abs() {
+            delta
+        } else {
+            wrapped_delta
+        }
     }
 }
 

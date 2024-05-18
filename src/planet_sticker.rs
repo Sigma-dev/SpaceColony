@@ -17,7 +17,7 @@ impl Plugin for PlanetStickerPlugin {
     }
 }
 
-fn stick_to_planet(mut commands: Commands, mut sticker_query: Query<(&mut Transform, &PlanetSticker)>, targets: Query<(&GlobalTransform, &Planet)>) {
+fn stick_to_planet(mut sticker_query: Query<(&mut Transform, &PlanetSticker)>, targets: Query<(&GlobalTransform, &Planet)>) {
     for (mut transform, sticker) in sticker_query.iter_mut() {
         if let Ok((planet_transform, planet)) = targets.get(sticker.planet) {
             let center = planet_transform.translation();
