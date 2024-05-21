@@ -10,6 +10,7 @@ approx = "0.5.1"
 bevy = { version = "0.13.0", features = ["dynamic_linking"] }
 rand = "0.8"
 num-traits = "0.2"
+bevy_mod_picking = "0.18.2"
 
 [workspace]
 resolver = "2"

@@ -7,15 +7,11 @@ mod planet_villager;
 extern crate approx;
 
 use bevy::{
-    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    window::PresentMode,
+    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, render::render_resource::FilterMode, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
 };
 use looping_float::LoopingFloat;
-use num_traits::ToPrimitive;
+use bevy_mod_picking::prelude::*;
 use planet_sticker::PlanetSticker;
-use rand::Rng;
 
 fn main() {
     App::new()
@@ -31,6 +27,7 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .add_plugins((planet_sticker::PlanetStickerPlugin, planet_villager::PlanetVillagerPlugin))
+        .add_plugins(DefaultPickingPlugins,)
         .add_systems(Startup, (setup))
         .run();
 }
@@ -52,7 +49,18 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+
+    commands.spawn(Camera2dBundle {
+        projection: OrthographicProjection {
+            far: 1000.,
+            near: -1000.,
+            scale: 0.4,
+            ..default()
+        },
+        ..default()
+    });
+
+  //  commands.spawn(Camera2dBundle::default());
 
     let rad: f32 = 100.;
 
@@ -80,17 +88,18 @@ fn setup(
             planet: main_planet,
             position_degrees: LoopingFloat::new(0.),
         },
+        On::<Pointer<Drag>>::target_component_mut::<PlanetSticker>(|drag, sticker| {
+            sticker.position_degrees += drag.delta.x
+        }),
     ));
 
-
-    let texture = asset_server.load("player/player.png");
-    let layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
+    let layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, Some(Vec2{ x: 1., y:1. }), None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     // Use only the subset of sprites in the sheet that make up the run animation
-    let animation_indices = AnimationIndices { first: 0, last: 6 };
+    let animation_indices = AnimationIndices { first: 2, last: 3 };
     commands.spawn((
         SpriteSheetBundle {
-            texture,
+            texture: asset_server.load("player/player.png"),
             atlas: TextureAtlas {
                 layout: texture_atlas_layout,
                 index: animation_indices.first,
@@ -102,15 +111,14 @@ fn setup(
             ..default()
         },
         animation_indices,
-        AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
+        AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
         planet_sticker::PlanetSticker {
             planet: main_planet,
             position_degrees: LoopingFloat::new(45.),
         },
         planet_villager::PlanetVillager {
             current_state: planet_villager::PlanetVillagerState::Running,
-            current_destination: 270.
-
+            current_destination: LoopingFloat::new(45.),
         }
     ));
 }
