@@ -29,6 +29,7 @@ fn main() {
         .add_plugins((planet_sticker::PlanetStickerPlugin, planet_villager::PlanetVillagerPlugin))
         .add_plugins(DefaultPickingPlugins,)
         .add_systems(Startup, (setup))
+        .insert_resource(Msaa::Off)
         .run();
 }
 
@@ -93,7 +94,7 @@ fn setup(
         }),
     ));
 
-    let layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, Some(Vec2{ x: 1., y:1. }), None);
+    let layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     // Use only the subset of sprites in the sheet that make up the run animation
     let animation_indices = AnimationIndices { first: 2, last: 3 };
@@ -118,7 +119,7 @@ fn setup(
         },
         planet_villager::PlanetVillager {
             current_state: planet_villager::PlanetVillagerState::Running,
-            current_destination: LoopingFloat::new(45.),
+            current_destination: LoopingFloat::new(0.),
         }
     ));
 }
