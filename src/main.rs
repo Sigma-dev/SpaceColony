@@ -79,7 +79,7 @@ fn setup(
     });
 
     //  commands.spawn(Camera2dBundle::default());
-
+    println!("Damso");
     let rad: f32 = 100.;
     let main_planet = commands
         .spawn((
@@ -111,91 +111,9 @@ fn setup(
                 number_of_workers: 0,
             },
             On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(
-                |drag, occupable| occupable.selected = true,
+                |_, occupable| occupable.selected = true,
             ),
-        ))
-        .with_children(|parent: &mut ChildBuilder| {
-            parent.spawn((
-                SpriteSheetBundle {
-                    texture: asset_server.load("ui/symbols.png"),
-                    atlas: TextureAtlas {
-                        layout: texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-                            Vec2::new(8.0, 8.0),
-                            10,
-                            2,
-                            None,
-                            None,
-                        )),
-                        index: 0,
-                    },
-                    transform: Transform {
-                        translation: Vec3 {
-                            x: 0.,
-                            y: 24.,
-                            z: 0.,
-                        },
-                        ..Default::default()
-                    },
-                    visibility: Visibility::Hidden,
-                    ..default()
-                },
-                occupable_counter::OccupableCounter,
-            ));
-            parent.spawn((
-                SpriteSheetBundle {
-                    texture: asset_server.load("ui/symbols.png"),
-                    atlas: TextureAtlas {
-                        layout: texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-                            Vec2::new(8.0, 8.0),
-                            10,
-                            2,
-                            None,
-                            None,
-                        )),
-                        index: 11,
-                    },
-                    transform: Transform {
-                        translation: Vec3 {
-                            x: -16.,
-                            y: 24.,
-                            z: 0.,
-                        },
-                        ..Default::default()
-                    },
-                    visibility: Visibility::Hidden,
-                    ..default()
-                },
-                button_value::Buttonvalue { value: -1 },
-                On::<Pointer<Click>>::run(change_value),
-            ));
-            parent.spawn((
-                SpriteSheetBundle {
-                    texture: asset_server.load("ui/symbols.png"),
-                    atlas: TextureAtlas {
-                        layout: texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-                            Vec2::new(8.0, 8.0),
-                            10,
-                            2,
-                            None,
-                            None,
-                        )),
-                        index: 10,
-                    },
-                    transform: Transform {
-                        translation: Vec3 {
-                            x: 16.,
-                            y: 24.,
-                            z: 0.,
-                        },
-                        ..Default::default()
-                    },
-                    visibility: Visibility::Hidden,
-                    ..default()
-                },
-                button_value::Buttonvalue { value: 1 },
-                On::<Pointer<Click>>::run(change_value),
-            ));
-        });
+        ));
 
     let layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
