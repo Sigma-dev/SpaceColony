@@ -21,7 +21,7 @@ fn handle_counters(
     for (mut atlas, parent) in counters_query.iter_mut() {
         let occupable = occupables_query.get(parent.get());
         if let Ok(valid) = occupable {
-            atlas.index = valid.number_of_workers as usize;
+            atlas.index = valid.workers.len() as usize;
         }
     }
 }

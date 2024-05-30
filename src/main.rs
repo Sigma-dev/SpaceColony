@@ -108,7 +108,8 @@ fn setup(
             },
             occupable::Occupable {
                 selected: false,
-                number_of_workers: 0,
+                workers: Vec::new(),
+                occupable_type: occupable::OccupableType::Cutting
             },
             On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(
                 |_, occupable| occupable.selected = true,
@@ -139,24 +140,9 @@ fn setup(
             position_degrees: LoopingFloat::new(45.),
         },
         planet_villager::PlanetVillager {
-            current_state: planet_villager::PlanetVillagerState::Running,
-            current_destination: LoopingFloat::new(0.),
+            current_state: planet_villager::PlanetVillagerState::Waiting,
+            current_destination: None,
+            current_occupable: None
         },
     ));
-}
-
-fn change_value(
-    event: Listener<Pointer<Click>>,
-    button_query: Query<(&button_value::Buttonvalue, &Parent)>,
-    mut occupable_query: Query<&mut occupable::Occupable>,
-) {
-    let Ok((button, parent)) = button_query.get(event.target) else {
-        return;
-    };
-    let Ok(mut occupable) = occupable_query.get_mut(parent.get()) else {
-        return;
-    };
-    let new: i32 = occupable.number_of_workers + button.value;
-    if new < 0 || new > 9 { return; }
-    occupable.number_of_workers = new;
 }

@@ -3,12 +3,19 @@ use std::process::Child;
 use bevy::{prelude::*, render::view::visibility};
 use bevy_mod_picking::prelude::*;
 
-use crate::{button_value, occupable_counter};
+use crate::{button_value, occupable_counter, planet_sticker::PlanetSticker, planet_villager::PlanetVillager};
 
-#[derive(Component)]
+#[derive(PartialEq)]
+pub enum OccupableType {
+    Cutting,
+    Interior
+}
+
+#[derive(Component, PartialEq)]
 pub struct Occupable {
     pub selected: bool,
-    pub number_of_workers: i32,
+    pub workers: Vec<Entity>,
+    pub occupable_type: OccupableType
 }
 
 pub struct OccupablePlugin;
@@ -97,17 +104,33 @@ fn spawn_button(
 fn change_value(
     event: Listener<Pointer<Click>>,
     button_query: Query<(&button_value::Buttonvalue, &Parent)>,
-    mut occupable_query: Query<&mut Occupable>,
+    villager_query: Query<(&mut PlanetVillager, &PlanetSticker)>,
+    mut occupable_query: Query<(&mut Occupable, &PlanetSticker, Entity)>,
 ) {
+    println!("{}", villager_query.iter().count());
     let Ok((button, parent)) = button_query.get(event.target) else {
         return;
     };
-    let Ok(mut occupable) = occupable_query.get_mut(parent.get()) else {
+    let Ok((mut occupable, sticker, entity)) = occupable_query.get_mut(parent.get()) else {
         return;
     };
-    let new: i32 = occupable.number_of_workers + button.value;
-    if new < 0 || new > 9 { return; }
-    occupable.number_of_workers = new;
+    let change = button.value;
+    let new: i32 = occupable.workers.len() as i32 + change;
+    if change == 1 {
+        find_and_assign_villager(&entity, sticker, villager_query);
+    }
+    //if new < 0 || new > 9 { return; }
+    //occupable.number_of_workers = new;
+}
+
+fn find_and_assign_villager(occupable: &Entity, occupable_planet: &PlanetSticker, mut villager_query: Query<(&mut PlanetVillager, &PlanetSticker)>,)
+{
+    for (mut villager, sticker) in villager_query.iter_mut() {
+        if sticker.planet == occupable_planet.planet && villager.current_occupable == None {
+            villager.current_occupable = Some(*occupable);
+            println!("set")
+        }
+    }
 }
 
 
