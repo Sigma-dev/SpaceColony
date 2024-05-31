@@ -48,6 +48,7 @@ fn main() {
         ))
         .add_plugins(DefaultPickingPlugins)
         .add_systems(Startup, (setup))
+        .add_event::<OccupancyChange>()
         .insert_resource(Msaa::Off)
         .run();
 }
@@ -56,6 +57,12 @@ fn main() {
 struct AnimationIndices {
     first: usize,
     last: usize,
+}
+
+#[derive(Event)]
+struct OccupancyChange {
+    occupable: Entity,
+    change: i32
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -79,7 +86,6 @@ fn setup(
     });
 
     //  commands.spawn(Camera2dBundle::default());
-    println!("Damso");
     let rad: f32 = 100.;
     let main_planet = commands
         .spawn((
