@@ -31,11 +31,3 @@ fn stick_to_planet(mut sticker_query: Query<(&mut Transform, &PlanetSticker)>, t
         }
     }
 }
-/* 
-fn rotate(mut sticker_query: Query<&mut PlanetSticker>) {
-    for mut sticker in sticker_query.iter_mut() {
-        sticker.position_degrees += 0.5;
-        println!("{}", sticker.position_degrees);
-    }
-}
-*/

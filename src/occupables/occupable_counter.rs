@@ -25,19 +25,9 @@ fn handle_counters(
             for (mut atlas, parent, mut counter) in counters_query.iter_mut() {
                 if parent.get() == ev.occupable {
                     counter.count += ev.change;
-                    println!("{}", occupable.workers.len());
                     atlas.index = counter.count as usize;
                 }
             }
         }
     }
-    /* 
-    for (mut atlas, parent) in counters_query.iter_mut() {
-        let occupable = occupables_query.get(parent.get());
-        if let Ok(valid) = occupable {
-            println!("damso: {}", valid.workers.len());
-            atlas.index = valid.workers.len() as usize;
-        }
-    }
-    */
 }

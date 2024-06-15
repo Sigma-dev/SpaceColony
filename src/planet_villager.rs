@@ -8,7 +8,7 @@ use crate::{AnimationIndices, AnimationTimer};
 
 #[derive(PartialEq)]
 pub enum PlanetVillagerState {
-    Waiting,
+    Wandering,
     Running,
     Working,
 }
@@ -18,6 +18,7 @@ pub struct PlanetVillager {
     pub current_state: PlanetVillagerState,
     pub current_destination: Option<LoopingFloat<360>>,
     pub current_occupable: Option<Entity>,
+    pub name: String
 }
 
 pub struct PlanetVillagerPlugin;
@@ -44,34 +45,14 @@ fn handle_villagers_behavior(
 ) {
     for (mut villager, mut sticker, mut transform) in villager_query.iter_mut() {
         match villager.current_state {
-            PlanetVillagerState::Waiting => handle_waiting(villager, &occupable_query),
+            PlanetVillagerState::Wandering => handle_wandering(villager, &occupable_query),
             PlanetVillagerState::Running => handle_running(villager, sticker, &time),
-            PlanetVillagerState::Working => handle_working(),
+            PlanetVillagerState::Working => handle_working(villager),
         }
-        /*
-        if villager.current_state == PlanetVillagerState::Waiting {
-            if let Some(occupable) = villager.current_occupable {
-                if let Ok(found) = occupable_query.get(occupable) {
-                    villager.current_destination = Some(found.position_degrees);
-                    villager.current_state = PlanetVillagerState::Running;
-                }
-            }
-                continue;
-        }
-        if let Some(destination) = villager.current_destination {
-            let seperating = sticker.position_degrees.difference(destination.to_f32());
-            if seperating.abs() < 0.1 {
-                villager.current_state = PlanetVillagerState::Waiting;
-                continue;
-            }
-            let dir = calculate_dir(sticker.position_degrees, destination);
-            sticker.position_degrees += dir * 15. * time.delta_seconds()
-        }
-         */
     }
 }
 
-fn handle_waiting(
+fn handle_wandering(
     mut villager: Mut<PlanetVillager>,
     occupable_query: &Query<&PlanetSticker, (With<Occupable>, Without<PlanetVillager>)>,
 ) {
@@ -94,14 +75,15 @@ fn handle_running(
             if villager.current_occupable != None {
                 villager.current_state = PlanetVillagerState::Working;
             } else {
-                villager.current_state = PlanetVillagerState::Waiting;
+                villager.current_state = PlanetVillagerState::Wandering;
             }
         }
         let dir = calculate_dir(sticker.position_degrees, destination);
         sticker.position_degrees += dir * 15. * time.delta_seconds()
     }
 }
-fn handle_working() {}
+fn handle_working(mut villager: Mut<PlanetVillager>) {
+}
 
 fn animate_villagers(
     time: Res<Time>,
@@ -125,7 +107,6 @@ fn animate_villagers(
                 sprite.flip_x = false;
             }
         }
-
         if villager.current_state != PlanetVillagerState::Running {
             atlas.index = 0;
             if villager.current_state == PlanetVillagerState::Working {
@@ -137,7 +118,7 @@ fn animate_villagers(
                     }
                 }
             }
-            return;
+            continue;
         }
         timer.tick(time.delta());
         if timer.just_finished() {
@@ -147,19 +128,8 @@ fn animate_villagers(
                 atlas.index + 1
             };
         }
-        println!("{}", atlas.index);
         if atlas.index == 1 {
             atlas.index = 2
         }
-        //atlas.index += 1
     }
 }
-/*
-fn determine_frame(
-    indices: &AnimationIndices,
-    mut timer: &AnimationTimer,
-    mut atlas: &TextureAtlas,
-    mut time: Res<Time>,
-) {
-}
-*/

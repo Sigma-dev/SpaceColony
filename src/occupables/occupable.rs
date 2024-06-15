@@ -37,11 +37,7 @@ fn spawn_ui(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    println!("Startup");
-
     for (e, occupable) in q.iter() {
-        println!("entity");
-
         let minus = spawn_button(
             &mut commands,
             &asset_server,
@@ -142,7 +138,6 @@ fn change_value(
     villager_query: Query<(&mut PlanetVillager, &PlanetSticker)>,
     occupable_query: Query<(&Occupable, &PlanetSticker, Entity)>,
 ) {
-    println!("{}", villager_query.iter().count());
     let Ok((button, parent)) = button_query.get(event.target) else {
         return;
     };
@@ -172,6 +167,7 @@ fn find_and_assign_villagers(
             if let Ok(occupable_sticker) = occupable_query.get(ev.occupable) {
                 if sticker.planet == occupable_sticker.planet && villager.current_occupable == None {
                     villager.current_occupable = Some(ev.occupable);
+                    return;
                 }
             }
         }

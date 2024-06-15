@@ -62,7 +62,7 @@ struct AnimationIndices {
 #[derive(Event)]
 struct OccupancyChange {
     occupable: Entity,
-    change: i32
+    change: i32,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -98,57 +98,59 @@ fn setup(
             planet::Planet { radius: rad },
         ))
         .id();
-    commands
-        .spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    anchor: bevy::sprite::Anchor::BottomCenter,
-                    ..default()
-                },
-                texture: asset_server.load("environment/tree/tree.png"),
-                ..default()
-            },
-            planet_sticker::PlanetSticker {
-                planet: main_planet,
-                position_degrees: LoopingFloat::new(0.),
-            },
-            occupable::Occupable {
-                selected: false,
-                workers: Vec::new(),
-                occupable_type: occupable::OccupableType::Cutting
-            },
-            On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(
-                |_, occupable| occupable.selected = true,
-            ),
-        ));
-
-    let layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    // Use only the subset of sprites in the sheet that make up the run animation
-    let animation_indices = AnimationIndices { first: 2, last: 3 };
     commands.spawn((
-        SpriteSheetBundle {
-            texture: asset_server.load("player/player.png"),
-            atlas: TextureAtlas {
-                layout: texture_atlas_layout,
-                index: animation_indices.first,
-            },
+        SpriteBundle {
             sprite: Sprite {
                 anchor: bevy::sprite::Anchor::BottomCenter,
                 ..default()
             },
+            texture: asset_server.load("environment/tree/tree.png"),
             ..default()
         },
-        animation_indices,
-        AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
         planet_sticker::PlanetSticker {
             planet: main_planet,
-            position_degrees: LoopingFloat::new(45.),
+            position_degrees: LoopingFloat::new(0.),
         },
-        planet_villager::PlanetVillager {
-            current_state: planet_villager::PlanetVillagerState::Waiting,
-            current_destination: None,
-            current_occupable: None
+        occupable::Occupable {
+            selected: false,
+            workers: Vec::new(),
+            occupable_type: occupable::OccupableType::Cutting,
         },
+        On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
+            occupable.selected = true
+        }),
     ));
+
+    for villager_index in 0..2 {
+        let layout: TextureAtlasLayout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
+        let texture_atlas_layout = texture_atlas_layouts.add(layout);
+        // Use only the subset of sprites in the sheet that make up the run animation
+        let animation_indices = AnimationIndices { first: 2, last: 3 };
+        commands.spawn((
+            SpriteSheetBundle {
+                texture: asset_server.load("player/player.png"),
+                atlas: TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: animation_indices.first,
+                },
+                sprite: Sprite {
+                    anchor: bevy::sprite::Anchor::BottomCenter,
+                    ..default()
+                },
+                ..default()
+            },
+            animation_indices,
+            AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
+            planet_sticker::PlanetSticker {
+                planet: main_planet,
+                position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
+            },
+            planet_villager::PlanetVillager {
+                current_state: planet_villager::PlanetVillagerState::Wandering,
+                current_destination: None,
+                current_occupable: None,
+                name: format!("Villager{villager_index}")
+            },
+        ));
+    }
 }
