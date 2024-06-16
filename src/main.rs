@@ -3,10 +3,6 @@ mod occupables {
     pub mod button_value;
     pub mod occupable;
     pub mod occupable_counter;
-    // You can also add other modules here if needed
-    // pub mod button_value;
-    // pub mod occupable_constants;
-    // pub mod looping_float;
 }
 use occupables::*;
 mod planet;
@@ -114,6 +110,7 @@ fn setup(
         occupable::Occupable {
             selected: false,
             workers: Vec::new(),
+            max_workers: 1,
             occupable_type: occupable::OccupableType::Cutting,
         },
         On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {

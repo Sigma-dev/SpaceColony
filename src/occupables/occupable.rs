@@ -4,9 +4,17 @@ use bevy::{prelude::*, render::view::visibility};
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    button_value, occupable_counter, planet_sticker::PlanetSticker,
-    planet_villager::PlanetVillager, OccupancyChange,
+    button_value,
+    occupable_counter::{self, OccupableCounter},
+    planet_sticker::PlanetSticker,
+    planet_villager::{PlanetVillager, PlanetVillagerState},
+    OccupancyChange,
 };
+
+#[derive(Resource, Default)]
+pub struct SelectedOccupable {
+    pub occupable: Option<Entity>,
+}
 
 #[derive(PartialEq)]
 pub enum OccupableType {
@@ -19,13 +27,14 @@ pub struct Occupable {
     pub selected: bool,
     pub workers: Vec<Entity>,
     pub occupable_type: OccupableType,
+    pub max_workers: i32,
 }
 
 pub struct OccupablePlugin;
 
 impl Plugin for OccupablePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_selected)
+        app.add_systems(Update, (select_entity_system, handle_selected))
             .add_systems(Update, find_and_assign_villagers)
             .add_systems(PostStartup, spawn_ui);
     }
@@ -37,6 +46,7 @@ fn spawn_ui(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
+    commands.init_resource::<SelectedOccupable>();
     for (e, occupable) in q.iter() {
         let minus = spawn_button(
             &mut commands,
@@ -50,9 +60,15 @@ fn spawn_ui(
             &mut texture_atlas_layouts,
             false,
         );
-        let counter = spawn_counter(&mut commands, &asset_server, &mut texture_atlas_layouts);
-        commands.entity(e).add_child(minus);
-        commands.entity(e).add_child(plus);
+        let counter = spawn_counter(
+            &mut commands,
+            &asset_server,
+            &mut texture_atlas_layouts,
+            minus,
+            plus,
+        );
+        commands.entity(counter).add_child(minus);
+        commands.entity(counter).add_child(plus);
         commands.entity(e).add_child(counter);
     }
 }
@@ -81,7 +97,6 @@ fn spawn_symbol(
                 translation: offset,
                 ..Default::default()
             },
-            visibility: Visibility::Hidden,
             ..default()
         },))
         .id();
@@ -91,6 +106,8 @@ fn spawn_counter(
     mut commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     mut texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
+    minus: Entity,
+    plus: Entity,
 ) -> Entity {
     let counter = spawn_symbol(
         commands,
@@ -105,7 +122,11 @@ fn spawn_counter(
     );
     commands
         .entity(counter)
-        .insert(occupable_counter::OccupableCounter { count: 0 });
+        .insert(occupable_counter::OccupableCounter {
+            count: 0,
+            minus_button: minus,
+            plus_button: plus,
+        });
     return counter;
 }
 
@@ -117,7 +138,7 @@ fn spawn_button(
 ) -> Entity {
     let offset = Vec3 {
         x: 16. * if minus { -1. } else { 1. },
-        y: 24.,
+        y: 0.,
         z: 0.,
     };
     let index = if minus { 11 } else { 10 };
@@ -136,38 +157,53 @@ fn change_value(
     event: Listener<Pointer<Click>>,
     button_query: Query<(&button_value::Buttonvalue, &Parent)>,
     villager_query: Query<(&mut PlanetVillager, &PlanetSticker)>,
-    occupable_query: Query<(&Occupable, &PlanetSticker, Entity)>,
+    counter_query: Query<&Parent, With<OccupableCounter>>,
+    occupable_query: Query<Entity, With<Occupable>>,
 ) {
     let Ok((button, parent)) = button_query.get(event.target) else {
         return;
     };
-    let Ok((occupable, sticker, entity)) = occupable_query.get(parent.get()) else {
+    let Ok(counter_entity) = counter_query.get(parent.get()) else {
         return;
     };
+    let Ok(entity) = occupable_query.get(counter_entity.get()) else {
+        return;
+    };
+
     ev_occupancy.send(OccupancyChange {
         occupable: entity,
         change: button.value,
     });
-    /*let change = button.value;
-    let new: i32 = occupable.workers.len() as i32 + change;
-    if change == 1 {
-        find_and_assign_villager(&entity, sticker, villager_query);
-    } */
-    //if new < 0 || new > 9 { return; }
-    //occupable.number_of_workers = new;
 }
 
 fn find_and_assign_villagers(
     mut ev_occupancy: EventReader<OccupancyChange>,
-    mut villager_query: Query<(&mut PlanetVillager, &PlanetSticker)>,
-    occupable_query: Query<&PlanetSticker, With<Occupable>>,
+    mut villager_query: Query<(Entity, &mut PlanetVillager, &PlanetSticker)>,
+    mut occupable_query: Query<(&mut Occupable, &PlanetSticker)>,
 ) {
     for ev in ev_occupancy.read() {
-        for (mut villager, sticker) in villager_query.iter_mut() {
-            if let Ok(occupable_sticker) = occupable_query.get(ev.occupable) {
-                if sticker.planet == occupable_sticker.planet && villager.current_occupable == None {
-                    villager.current_occupable = Some(ev.occupable);
-                    return;
+        if ev.change == 1 {
+            for (villager_entity, mut villager, sticker) in villager_query.iter_mut() {
+                if let Ok((mut occupable, occupable_sticker)) =
+                    occupable_query.get_mut(ev.occupable)
+                {
+                    if sticker.planet == occupable_sticker.planet
+                        && villager.current_occupable == None
+                    {
+                        villager.current_occupable = Some(ev.occupable);
+                        occupable.workers.push(villager_entity);
+                        return;
+                    }
+                }
+            }
+        } else if ev.change == -1 {
+            if let Ok((mut occupable, occupable_sticker)) = occupable_query.get_mut(ev.occupable) {
+                if let Some(worker) = occupable.workers.last() {
+                    if let Ok((_, mut villager, _)) = villager_query.get_mut(*worker) {
+                        villager.current_occupable = None;
+                        villager.current_state = PlanetVillagerState::Wandering;
+                        occupable.workers.pop();
+                    }
                 }
             }
         }
@@ -177,7 +213,10 @@ fn find_and_assign_villagers(
 fn handle_selected(
     mut sprite_children: Query<(&mut Visibility, &Parent)>,
     occupables: Query<&Occupable>,
+    mut selected_occupable: Res<SelectedOccupable>,
 ) {
+    //selected_occupable
+    return;
     for (mut visibility, parent) in sprite_children.iter_mut() {
         let occupable = occupables.get(parent.get());
         if let Ok(valid) = occupable {
@@ -186,6 +225,18 @@ fn handle_selected(
             } else {
                 *visibility = Visibility::Hidden
             }
+        }
+    }
+}
+
+fn select_entity_system(
+    mut events: EventReader<Pointer<Click>>,
+    mut selected_occuppable: ResMut<SelectedOccupable>,
+    query: Query<Entity, With<Occupable>>,
+) {
+    for event in events.read() {
+        if query.get(event.target).is_ok() {
+            selected_occuppable.occupable = Some(event.target);
         }
     }
 }
