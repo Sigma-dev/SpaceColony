@@ -96,29 +96,31 @@ fn setup(
             planet::Planet { radius: rad },
         ))
         .id();
-    commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                anchor: bevy::sprite::Anchor::BottomCenter,
+    for tree_index in 0..2 {
+        commands.spawn((
+            SpriteBundle {
+                sprite: Sprite {
+                    anchor: bevy::sprite::Anchor::BottomCenter,
+                    ..default()
+                },
+                texture: asset_server.load("environment/tree/tree.png"),
                 ..default()
             },
-            texture: asset_server.load("environment/tree/tree.png"),
-            ..default()
-        },
-        planet_sticker::PlanetSticker {
-            planet: main_planet,
-            position_degrees: LoopingFloat::new(0.),
-        },
-        occupable::Occupable {
-            selected: false,
-            workers: Vec::new(),
-            max_workers: 1,
-            occupable_type: occupable::OccupableType::Cutting,
-        },
-        On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
-            occupable.selected = true
-        }),
-    ));
+            planet_sticker::PlanetSticker {
+                planet: main_planet,
+                position_degrees: LoopingFloat::new(0. + tree_index as f32 * 180.),
+            },
+            occupable::Occupable {
+                selected: false,
+                workers: Vec::new(),
+                max_workers: 1,
+                occupable_type: occupable::OccupableType::Cutting,
+            },
+            On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
+                occupable.selected = true
+            }),
+        ));
+    }
     for villager_index in 0..2 {
         commands.spawn((
             SpriteBundle {

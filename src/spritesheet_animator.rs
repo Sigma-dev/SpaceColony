@@ -3,9 +3,9 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct SpritesheetAnimator {
     pub current_animation_index: u32,
-    pub tile_size: UVec2,
-    pub animation_frames: Vec<Vec<f32>>,
-    pub current_frame_time: f32,
+    tile_size: UVec2,
+    animation_frames: Vec<Vec<f32>>,
+    current_frame_time: f32,
     last_animation_index: u32,
     current_frame_index: u32,
 }

@@ -45,7 +45,7 @@ fn handle_villagers_behavior(
 ) {
     for (mut villager, mut sticker, mut transform, mut animator) in villager_query.iter_mut() {
         match villager.current_state {
-            PlanetVillagerState::Wandering => handle_wandering(villager, animator, &occupable_query),
+            PlanetVillagerState::Wandering => handle_wandering(villager, sticker, animator, &occupable_query),
             PlanetVillagerState::Running => handle_running(villager, animator, sticker, &time),
             PlanetVillagerState::Working => handle_working(villager, animator),
         }
@@ -54,6 +54,7 @@ fn handle_villagers_behavior(
 
 fn handle_wandering(
     mut villager: Mut<PlanetVillager>,
+    mut villager_sticker: Mut<PlanetSticker>,
     mut animator: Mut<spritesheet_animator::SpritesheetAnimator>,
     occupable_query: &Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
 ) {
@@ -62,7 +63,7 @@ fn handle_wandering(
         if let Ok((sticker, occupable)) = occupable_query.get(occupable_entity) {
             villager.current_state = PlanetVillagerState::Running;
             if occupable.occupable_type == OccupableType::Cutting {
-                villager.current_destination = Some(sticker.position_degrees + 5.);
+                villager.current_destination = Some(sticker.position_degrees + (-villager_sticker.position_degrees.direction(sticker.position_degrees.to_f32()) as f32 * 5.));
             } else {
                 villager.current_destination = Some(sticker.position_degrees);
             }

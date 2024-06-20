@@ -1,6 +1,8 @@
 use std::fmt;
 use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
 
+use num_traits::clamp;
+
 #[derive(Debug, Copy, Clone)]
 pub struct LoopingFloat<const MAX: u32> {
     value: f32,
@@ -44,6 +46,13 @@ impl<const MAX: u32> LoopingFloat<MAX> {
         } else {
             wrapped_delta
         }
+    }
+
+    pub fn direction(&self, other: f32) -> i32 {
+        let diff = self.difference(other);
+        if diff > 0. {return 1;}
+        if diff < 0. {return -1;}
+        return 0
     }
 }
 
