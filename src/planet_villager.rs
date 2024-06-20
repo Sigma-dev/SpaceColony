@@ -4,7 +4,7 @@ use bevy::render::view::visibility;
 use crate::looping_float::LoopingFloat;
 use crate::occupable::{self, Occupable, OccupableType};
 use crate::planet_sticker::PlanetSticker;
-use crate::{AnimationIndices, AnimationTimer};
+use crate::{spritesheet_animator, AnimationIndices, AnimationTimer};
 
 #[derive(PartialEq)]
 pub enum PlanetVillagerState {
@@ -38,24 +38,26 @@ fn calculate_dir(p1: LoopingFloat<360>, p2: LoopingFloat<360>) -> f32 {
 }
 
 fn handle_villagers_behavior(
-    mut villager_query: Query<(&mut PlanetVillager, &mut PlanetSticker, &mut Transform)>,
+    mut villager_query: Query<(&mut PlanetVillager, &mut PlanetSticker, &mut Transform, &mut spritesheet_animator::SpritesheetAnimator)>,
     occupable_query: Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
-    for (mut villager, mut sticker, mut transform) in villager_query.iter_mut() {
+    for (mut villager, mut sticker, mut transform, mut animator) in villager_query.iter_mut() {
         match villager.current_state {
-            PlanetVillagerState::Wandering => handle_wandering(villager, &occupable_query),
-            PlanetVillagerState::Running => handle_running(villager, sticker, &time),
-            PlanetVillagerState::Working => handle_working(villager),
+            PlanetVillagerState::Wandering => handle_wandering(villager, animator, &occupable_query),
+            PlanetVillagerState::Running => handle_running(villager, animator, sticker, &time),
+            PlanetVillagerState::Working => handle_working(villager, animator),
         }
     }
 }
 
 fn handle_wandering(
     mut villager: Mut<PlanetVillager>,
+    mut animator: Mut<spritesheet_animator::SpritesheetAnimator>,
     occupable_query: &Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
 ) {
+    animator.current_animation_index = 0;
     if let Some(occupable_entity) = villager.current_occupable {
         if let Ok((sticker, occupable)) = occupable_query.get(occupable_entity) {
             villager.current_state = PlanetVillagerState::Running;
@@ -70,9 +72,11 @@ fn handle_wandering(
 
 fn handle_running(
     mut villager: Mut<PlanetVillager>,
+    mut animator: Mut<spritesheet_animator::SpritesheetAnimator>,
     mut sticker: Mut<PlanetSticker>,
     time: &Res<Time>,
 ) {
+    animator.current_animation_index = 1;
     if let Some(destination) = villager.current_destination {
         let seperating = sticker.position_degrees.difference(destination.to_f32());
         if seperating.abs() < 0.1 {
@@ -86,23 +90,26 @@ fn handle_running(
         sticker.position_degrees += dir * 15. * time.delta_seconds()
     }
 }
-fn handle_working(mut villager: Mut<PlanetVillager>) {
+fn handle_working(
+    mut villager: Mut<PlanetVillager>,
+    mut animator: Mut<spritesheet_animator::SpritesheetAnimator>,
+) {
+    animator.current_animation_index = 2;
 }
 
 fn animate_villagers(
     time: Res<Time>,
-    mut query: Query<(
-        &AnimationIndices,
-        &mut AnimationTimer,
-        &mut TextureAtlas,
-        &mut Sprite,
+    mut animators: Query<(
         &PlanetVillager,
         &PlanetSticker,
-        &mut Visibility
+        &mut spritesheet_animator::SpritesheetAnimator,
+        &mut Visibility,
+        &mut Sprite
     )>,
     occupable_query: Query<&Occupable>
 ) {
-    for (indices, mut timer, mut atlas, mut sprite, villager, sticker, mut visibility) in &mut query {
+    
+    for (villager, sticker, mut animator, mut visibility, mut sprite) in animators.iter_mut() {
         *visibility = Visibility::Visible;
         if let Some(destination) = villager.current_destination {
             if calculate_dir(sticker.position_degrees, destination) < 0. {
@@ -112,7 +119,6 @@ fn animate_villagers(
             }
         }
         if villager.current_state != PlanetVillagerState::Running {
-            atlas.index = 0;
             if villager.current_state == PlanetVillagerState::Working {
                 if let Some(occupable_entity) = villager.current_occupable {
                     if let Ok(occupable) = occupable_query.get(occupable_entity) {
@@ -123,17 +129,6 @@ fn animate_villagers(
                 }
             }
             continue;
-        }
-        timer.tick(time.delta());
-        if timer.just_finished() {
-            atlas.index = if atlas.index == indices.last {
-                indices.first
-            } else {
-                atlas.index + 1
-            };
-        }
-        if atlas.index == 1 {
-            atlas.index = 2
-        }
+        } 
     }
 }

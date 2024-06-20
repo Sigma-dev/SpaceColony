@@ -8,6 +8,7 @@ use occupables::*;
 mod planet;
 mod planet_sticker;
 mod planet_villager;
+mod spritesheet_animator;
 
 #[macro_use]
 extern crate approx;
@@ -22,6 +23,7 @@ use bevy::{
 use bevy_mod_picking::prelude::*;
 use looping_float::LoopingFloat;
 use planet_sticker::PlanetSticker;
+use spritesheet_animator::AnimationProperties;
 
 fn main() {
     App::new()
@@ -41,6 +43,7 @@ fn main() {
             planet_villager::PlanetVillagerPlugin,
             occupable::OccupablePlugin,
             occupable_counter::OccupableCounterPlugin,
+            spritesheet_animator::SpritesheetAnimatorPlugin
         ))
         .add_plugins(DefaultPickingPlugins)
         .add_systems(Startup, (setup))
@@ -117,7 +120,7 @@ fn setup(
             occupable.selected = true
         }),
     ));
-
+/*
     for villager_index in 0..2 {
         let layout: TextureAtlasLayout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
         let texture_atlas_layout = texture_atlas_layouts.add(layout);
@@ -138,6 +141,91 @@ fn setup(
             },
             animation_indices,
             AnimationTimer(Timer::from_seconds(0.15, TimerMode::Repeating)),
+            planet_sticker::PlanetSticker {
+                planet: main_planet,
+                position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
+            },
+            planet_villager::PlanetVillager {
+                current_state: planet_villager::PlanetVillagerState::Wandering,
+                current_destination: None,
+                current_occupable: None,
+                name: format!("Villager{villager_index}")
+            },
+        ));
+    }*/
+    /* 
+    for villager_index in 0..2 {
+        let layout: TextureAtlasLayout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
+        let texture_atlas_layout = texture_atlas_layouts.add(layout);
+        // Use only the subset of sprites in the sheet that make up the run animation
+        commands.spawn((
+            SpriteSheetBundle {
+                texture: asset_server.load("player/player.png"),
+                atlas: TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: 0,
+                },
+                sprite: Sprite {
+                    anchor: bevy::sprite::Anchor::BottomCenter,
+                    ..default()
+                },
+                ..default()
+            },
+            spritesheet_animator::SpritesheetAnimator {
+                current_animation_index: 0,
+                tile_size: UVec2{x: 16, y: 16},
+                animation_properties: vec![
+                    AnimationProperties {
+                        frame_time: 0.6,
+                        length: 2,
+                    },
+                    AnimationProperties {
+                        frame_time: 0.2,
+                        length: 2,
+                    }
+                ],
+                current_frame_time: 0.
+            },
+            planet_sticker::PlanetSticker {
+                planet: main_planet,
+                position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
+            },
+            planet_villager::PlanetVillager {
+                current_state: planet_villager::PlanetVillagerState::Wandering,
+                current_destination: None,
+                current_occupable: None,
+                name: format!("Villager{villager_index}")
+            },
+        ));
+    }
+    */
+    for villager_index in 0..2 {
+        let layout: TextureAtlasLayout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 2, 2, None, None);
+        let texture_atlas_layout: Handle<TextureAtlasLayout> = texture_atlas_layouts.add(layout);
+        // Use only the subset of sprites in the sheet that make up the run animation
+        commands.spawn((
+            SpriteBundle {
+                texture: asset_server.load("player/player.png"),
+                sprite: Sprite {
+                    anchor: bevy::sprite::Anchor::BottomCenter,
+                    ..default()
+                },
+                ..default()
+            },
+            spritesheet_animator::SpritesheetAnimator::new( UVec2{x: 16, y: 16}, vec![
+                AnimationProperties {
+                    frame_time: 0.6,
+                    length: 2,
+                },
+                AnimationProperties {
+                    frame_time: 0.2,
+                    length: 2,
+                },
+                AnimationProperties {
+                    frame_time: 0.2,
+                    length: 4,
+                }
+            ]),
             planet_sticker::PlanetSticker {
                 planet: main_planet,
                 position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
