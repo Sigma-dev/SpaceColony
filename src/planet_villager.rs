@@ -39,7 +39,7 @@ fn calculate_dir(p1: LoopingFloat<360>, p2: LoopingFloat<360>) -> f32 {
 
 fn handle_villagers_behavior(
     mut villager_query: Query<(&mut PlanetVillager, &mut PlanetSticker, &mut Transform)>,
-    occupable_query: Query<&PlanetSticker, (With<Occupable>, Without<PlanetVillager>)>,
+    occupable_query: Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
@@ -54,12 +54,16 @@ fn handle_villagers_behavior(
 
 fn handle_wandering(
     mut villager: Mut<PlanetVillager>,
-    occupable_query: &Query<&PlanetSticker, (With<Occupable>, Without<PlanetVillager>)>,
+    occupable_query: &Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
 ) {
-    if let Some(occupable) = villager.current_occupable {
-        if let Ok(found) = occupable_query.get(occupable) {
-            villager.current_destination = Some(found.position_degrees);
+    if let Some(occupable_entity) = villager.current_occupable {
+        if let Ok((sticker, occupable)) = occupable_query.get(occupable_entity) {
             villager.current_state = PlanetVillagerState::Running;
+            if occupable.occupable_type == OccupableType::Cutting {
+                villager.current_destination = Some(sticker.position_degrees + 5.);
+            } else {
+                villager.current_destination = Some(sticker.position_degrees);
+            }
         }
     }
 }

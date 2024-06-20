@@ -47,6 +47,7 @@ impl<const MAX: u32> LoopingFloat<MAX> {
     }
 }
 
+// Operations with f32
 impl<const MAX: u32> Add<f32> for LoopingFloat<MAX> {
     type Output = Self;
 
@@ -111,6 +112,75 @@ impl<const MAX: u32> MulAssign<f32> for LoopingFloat<MAX> {
 impl<const MAX: u32> DivAssign<f32> for LoopingFloat<MAX> {
     fn div_assign(&mut self, other: f32) {
         self.value /= other;
+        self.wrap();
+    }
+}
+
+// Operations with LoopingFloat
+impl<const MAX: u32> Add for LoopingFloat<MAX> {
+    type Output = Self;
+
+    fn add(mut self, other: Self) -> Self::Output {
+        self.value += other.value;
+        self.wrap();
+        self
+    }
+}
+
+impl<const MAX: u32> Sub for LoopingFloat<MAX> {
+    type Output = Self;
+
+    fn sub(mut self, other: Self) -> Self::Output {
+        self.value -= other.value;
+        self.wrap();
+        self
+    }
+}
+
+impl<const MAX: u32> Mul for LoopingFloat<MAX> {
+    type Output = Self;
+
+    fn mul(mut self, other: Self) -> Self::Output {
+        self.value *= other.value;
+        self.wrap();
+        self
+    }
+}
+
+impl<const MAX: u32> Div for LoopingFloat<MAX> {
+    type Output = Self;
+
+    fn div(mut self, other: Self) -> Self::Output {
+        self.value /= other.value;
+        self.wrap();
+        self
+    }
+}
+
+impl<const MAX: u32> AddAssign for LoopingFloat<MAX> {
+    fn add_assign(&mut self, other: Self) {
+        self.value += other.value;
+        self.wrap();
+    }
+}
+
+impl<const MAX: u32> SubAssign for LoopingFloat<MAX> {
+    fn sub_assign(&mut self, other: Self) {
+        self.value -= other.value;
+        self.wrap();
+    }
+}
+
+impl<const MAX: u32> MulAssign for LoopingFloat<MAX> {
+    fn mul_assign(&mut self, other: Self) {
+        self.value *= other.value;
+        self.wrap();
+    }
+}
+
+impl<const MAX: u32> DivAssign for LoopingFloat<MAX> {
+    fn div_assign(&mut self, other: Self) {
+        self.value /= other.value;
         self.wrap();
     }
 }
