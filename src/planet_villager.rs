@@ -4,13 +4,13 @@ use bevy::render::view::visibility;
 use crate::looping_float::LoopingFloat;
 use crate::occupable::{self, Occupable, OccupableType};
 use crate::planet_sticker::PlanetSticker;
-use crate::{spritesheet_animator, AnimationIndices, AnimationTimer};
+use crate::{spritesheet_animator};
 use rand::Rng;
 
 pub enum PlanetVillagerAnimationState {
     Idle = 0,
     Run = 1,
-    Work = 2,
+    Cut = 2,
 }
 
 #[derive(Component)]
@@ -105,7 +105,7 @@ fn walk_towards(
     let dir = sticker.position_degrees.direction(destination.to_f32()) as f32;
     sticker.position_degrees += dir * speed * elapsed_seconds;
     sprite.flip_x = seperating < 0.;
-    animator.current_animation_index = 1;
+    animator.current_animation_index = PlanetVillagerAnimationState::Run as u32;;
     return false;
 }
 
@@ -140,7 +140,7 @@ fn handle_working_villagers(
                 target,
                 15.,
             ) {
-                animator.current_animation_index = 2;
+                animator.current_animation_index = PlanetVillagerAnimationState::Cut as u32;;
             }
 
             *visibility = if occupable.occupable_type == OccupableType::Interior {

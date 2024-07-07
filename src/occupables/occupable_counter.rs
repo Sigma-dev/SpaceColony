@@ -1,6 +1,7 @@
-use crate::{occupables::*, OccupancyChange};
+use crate::{occupables::*};
 use bevy::{prelude::*, render::view::visibility, transform};
 use num_traits::ToPrimitive;
+use occupable::OccupancyChange;
 
 #[derive(Component)]
 pub struct OccupableCounter {

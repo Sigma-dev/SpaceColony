@@ -4,7 +4,7 @@ use bevy::{prelude::*, render::view::visibility};
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet_sticker::PlanetSticker, planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking}, OccupancyChange
+    button_value, occupable_counter::{self, OccupableCounter}, planet_sticker::PlanetSticker, planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking}
 };
 
 #[derive(Resource, Default)]
@@ -16,6 +16,12 @@ pub struct SelectedOccupable {
 pub enum OccupableType {
     Cutting,
     Interior,
+}
+
+#[derive(Event)]
+pub struct OccupancyChange {
+    pub occupable: Entity,
+    pub change: i32,
 }
 
 #[derive(Component, PartialEq)]

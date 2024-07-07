@@ -22,6 +22,7 @@ use bevy::{
 };
 use bevy_mod_picking::prelude::*;
 use looping_float::LoopingFloat;
+use planet::NewPlanet;
 use planet_sticker::PlanetSticker;
 
 fn main() {
@@ -46,32 +47,16 @@ fn main() {
         ))
         .add_plugins(DefaultPickingPlugins)
         .add_systems(Startup, (setup))
-        .add_event::<OccupancyChange>()
+        .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
         .run();
 }
-
-#[derive(Component)]
-struct AnimationIndices {
-    first: usize,
-    last: usize,
-}
-
-#[derive(Event)]
-struct OccupancyChange {
-    occupable: Entity,
-    change: i32,
-}
-
-#[derive(Component, Deref, DerefMut)]
-struct AnimationTimer(Timer);
 
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
@@ -83,19 +68,7 @@ fn setup(
         ..default()
     });
 
-    //  commands.spawn(Camera2dBundle::default());
-    let rad: f32 = 100.;
-    let main_planet = commands
-        .spawn((
-            MaterialMesh2dBundle {
-                mesh: Mesh2dHandle(meshes.add(Circle { radius: rad })),
-                material: materials.add(Color::hsl(1., 1., 1.)),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                ..default()
-            },
-            planet::Planet { radius: rad },
-        ))
-        .id();
+    let main_planet = commands.spawn(planet::PlanetBundle::new(100., meshes, materials)).id();
     for tree_index in 0..2 {
         commands.spawn((
             SpriteBundle {
