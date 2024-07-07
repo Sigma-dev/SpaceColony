@@ -3,7 +3,7 @@ use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
 
 use num_traits::clamp;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct LoopingFloat<const MAX: u32> {
     value: f32,
 }

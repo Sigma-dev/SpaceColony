@@ -4,6 +4,7 @@ mod occupables {
     pub mod occupable;
     pub mod occupable_counter;
 }
+
 use occupables::*;
 mod planet;
 mod planet_sticker;
@@ -14,16 +15,17 @@ mod spritesheet_animator;
 extern crate approx;
 
 use bevy::{
-    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*,
-    render::render_resource::FilterMode,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    window::PresentMode,
+    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, render::render_resource::FilterMode, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, utils::{self, HashMap}, window::PresentMode
 };
 use bevy_mod_picking::prelude::*;
 use looping_float::LoopingFloat;
 use planet::NewPlanet;
 use planet_sticker::PlanetSticker;
+
+#[derive(Resource, Default)]
+struct Resources {
+    stored: HashMap<i32, i32>
+}
 
 fn main() {
     App::new()
@@ -46,9 +48,10 @@ fn main() {
             spritesheet_animator::SpritesheetAnimatorPlugin
         ))
         .add_plugins(DefaultPickingPlugins)
-        .add_systems(Startup, (setup))
+        .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
+        .insert_resource(Resources::default())
         .run();
 }
 
@@ -88,6 +91,7 @@ fn setup(
                 workers: Vec::new(),
                 max_workers: 1,
                 occupable_type: occupable::OccupableType::Cutting,
+                produced_resource: occupable::ResourceType::Wood
             },
             On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
                 occupable.selected = true
