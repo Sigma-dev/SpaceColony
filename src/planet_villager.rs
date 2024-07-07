@@ -7,26 +7,48 @@ use crate::planet_sticker::PlanetSticker;
 use crate::{spritesheet_animator, AnimationIndices, AnimationTimer};
 use rand::Rng;
 
-#[derive(PartialEq)]
-pub enum PlanetVillagerState {
-    Wandering,
-    Running,
-    Working,
+pub enum PlanetVillagerAnimationState {
+    Idle = 0,
+    Run = 1,
+    Work = 2,
 }
 
 #[derive(Component)]
 pub struct PlanetVillager {
-    pub current_state: PlanetVillagerState,
-    pub current_destination: Option<LoopingFloat<360>>,
-    pub current_occupable: Option<Entity>,
-    pub name: String
+    pub name: String,
+}
+
+#[derive(Component)]
+pub struct VillagerWorking {
+    pub current_occupable: Entity,
+}
+
+#[derive(Component)]
+pub struct VillagerWandering {
+    pub current_destination: LoopingFloat<360>,
+    pub wait_time: f32,
+}
+
+impl Default for VillagerWandering {
+    fn default() -> VillagerWandering {
+        VillagerWandering {
+            current_destination: LoopingFloat::new(0.),
+            wait_time: 0.01
+        }
+    }
 }
 
 pub struct PlanetVillagerPlugin;
 
 impl Plugin for PlanetVillagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_villagers_behavior, animate_villagers));
+        app.add_systems(
+            Update,
+            (
+                handle_working_villagers,
+                handle_wandering_villagers,
+            ),
+        );
     }
 }
 
@@ -37,7 +59,7 @@ fn calculate_dir(p1: LoopingFloat<360>, p2: LoopingFloat<360>) -> f32 {
     };
     return 1.;
 }
-
+/*
 fn handle_villagers_behavior(
     mut villager_query: Query<(&mut PlanetVillager, &mut PlanetSticker, &mut Transform, &mut spritesheet_animator::SpritesheetAnimator)>,
     occupable_query: Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
@@ -51,30 +73,67 @@ fn handle_villagers_behavior(
             PlanetVillagerState::Working => handle_working(villager, animator),
         }
     }
-}
+}*/
 
-fn handle_wandering(
-    mut villager: Mut<PlanetVillager>,
-    mut villager_sticker: Mut<PlanetSticker>,
-    mut animator: Mut<spritesheet_animator::SpritesheetAnimator>,
-    occupable_query: &Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
+fn handle_wandering_villagers(
+    mut villager_query: Query<(
+        &mut PlanetVillager,
+        &mut VillagerWandering,
+        &mut PlanetSticker,
+        &mut Transform,
+        &mut Sprite,
+        &mut Visibility,
+        &mut spritesheet_animator::SpritesheetAnimator,
+    )>,
+    occupable_query: Query<(&PlanetSticker, &Occupable), Without<PlanetVillager>>,
+    time: Res<Time>,
 ) {
-    animator.current_animation_index = 0;
-    if let Some(occupable_entity) = villager.current_occupable {
-        if let Ok((sticker, occupable)) = occupable_query.get(occupable_entity) {
-            villager.current_state = PlanetVillagerState::Running;
-            if occupable.occupable_type == OccupableType::Cutting {
-                villager.current_destination = Some(sticker.position_degrees + (-villager_sticker.position_degrees.direction(sticker.position_degrees.to_f32()) as f32 * 5.));
-            } else {
-                villager.current_destination = Some(sticker.position_degrees);
+    for (mut villager, mut wandering, mut sticker, mut transform, mut sprite, mut visibility, mut animator) in
+        villager_query.iter_mut()
+    {
+        *visibility = Visibility::Visible;
+        animator.current_animation_index = PlanetVillagerAnimationState::Idle as u32;
+        if wandering.wait_time > 0. {
+            wandering.wait_time -= time.delta_seconds();
+            if wandering.wait_time <= 0. {
+                wandering.current_destination =
+                    sticker.position_degrees + rand::thread_rng().gen_range(-20.0..20.0)
             }
+        } else {
+            if (walk_towards(&mut animator, sticker, sprite, time.delta_seconds(), wandering.current_destination, 7.)) {
+                wandering.wait_time = rand::thread_rng().gen_range(0.5..2.5);
+            }
+            /* 
+            animator.current_animation_index = 1;
+            let seperating = sticker
+                .position_degrees
+                .difference(wandering.current_destination.to_f32());
+            if seperating.abs() < 0.1 {
+                wandering.wait_time = rand::thread_rng().gen_range(0.5..2.5);
+                return;
+            }
+            let dir = calculate_dir(sticker.position_degrees, wandering.current_destination);
+            sticker.position_degrees += dir * 7. * time.delta_seconds();
+            sprite.flip_x = seperating < 0.;
+            */
         }
-    }else if villager.current_destination.is_none() {
-        villager.current_state = PlanetVillagerState::Running;
-        villager.current_destination = Some(villager_sticker.position_degrees + rand::thread_rng().gen_range(-30.0..30.0))
     }
 }
 
+fn walk_towards(animator: &mut spritesheet_animator::SpritesheetAnimator, mut sticker: Mut<PlanetSticker>,  mut sprite: Mut<Sprite>, elapsed_seconds: f32, destination: LoopingFloat<360>, speed: f32) -> bool {
+    let seperating = sticker
+                .position_degrees
+                .difference(destination.to_f32());
+    if seperating.abs() < 0.1 {
+        return true;
+    }
+    let dir = calculate_dir(sticker.position_degrees, destination);
+    sticker.position_degrees += dir * speed * elapsed_seconds;
+    sprite.flip_x = seperating < 0.;
+    animator.current_animation_index = 1;
+    return false
+}
+/*
 fn handle_running(
     mut villager: Mut<PlanetVillager>,
     mut animator: Mut<spritesheet_animator::SpritesheetAnimator>,
@@ -95,46 +154,36 @@ fn handle_running(
         let dir = calculate_dir(sticker.position_degrees, destination);
         sticker.position_degrees += dir * 15. * time.delta_seconds()
     }
-}
-fn handle_working(
-    mut villager: Mut<PlanetVillager>,
-    mut animator: Mut<spritesheet_animator::SpritesheetAnimator>,
-) {
-    animator.current_animation_index = 2;
-}
+}*/
 
-fn animate_villagers(
-    time: Res<Time>,
-    mut animators: Query<(
-        &PlanetVillager,
-        &PlanetSticker,
-        &mut spritesheet_animator::SpritesheetAnimator,
+fn handle_working_villagers(
+    mut villager_query: Query<(
+        &mut VillagerWorking,
+        &mut PlanetSticker,
         &mut Visibility,
-        &mut Sprite
+        &mut Sprite,
+        &mut spritesheet_animator::SpritesheetAnimator,
     )>,
-    occupable_query: Query<&Occupable>
+    occupable_query: Query<(&Occupable, &PlanetSticker), Without<PlanetVillager>>,
+    time: Res<Time>
 ) {
-    
-    for (villager, sticker, mut animator, mut visibility, mut sprite) in animators.iter_mut() {
+    for (mut worker, mut sticker, mut visibility, mut sprite, mut animator) in
+        villager_query.iter_mut()
+    {
         *visibility = Visibility::Visible;
-        if let Some(destination) = villager.current_destination {
-            if calculate_dir(sticker.position_degrees, destination) < 0. {
-                sprite.flip_x = true;
-            } else {
-                sprite.flip_x = false;
+        
+
+        if let Ok((occupable,occupable_sticker)) = occupable_query.get(worker.current_occupable) {
+            let mut target = occupable_sticker.position_degrees;
+            if occupable.occupable_type == OccupableType::Cutting {
+                target += sticker.position_degrees.direction(occupable_sticker.position_degrees.to_f32()) as f32 * -5.;
+            }
+            if walk_towards(&mut animator, sticker, sprite, time.delta_seconds(), target, 15.) {
+                animator.current_animation_index = 2;
+            }
+            if occupable.occupable_type == OccupableType::Interior {
+                *visibility = Visibility::Hidden;
             }
         }
-        if villager.current_state != PlanetVillagerState::Running {
-            if villager.current_state == PlanetVillagerState::Working {
-                if let Some(occupable_entity) = villager.current_occupable {
-                    if let Ok(occupable) = occupable_query.get(occupable_entity) {
-                        if occupable.occupable_type == OccupableType::Interior {
-                            *visibility = Visibility::Hidden;
-                        }
-                    }
-                }
-            }
-            continue;
-        } 
     }
 }

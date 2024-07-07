@@ -141,11 +141,9 @@ fn setup(
                 position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
             },
             planet_villager::PlanetVillager {
-                current_state: planet_villager::PlanetVillagerState::Wandering,
-                current_destination: None,
-                current_occupable: None,
                 name: format!("Villager{villager_index}")
             },
+            planet_villager::VillagerWandering::default(),
         ));
     }
 }

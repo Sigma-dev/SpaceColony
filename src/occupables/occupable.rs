@@ -4,11 +4,7 @@ use bevy::{prelude::*, render::view::visibility};
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    button_value,
-    occupable_counter::{self, OccupableCounter},
-    planet_sticker::PlanetSticker,
-    planet_villager::{PlanetVillager, PlanetVillagerState},
-    OccupancyChange,
+    button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet_sticker::PlanetSticker, planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking}, OccupancyChange
 };
 
 #[derive(Resource, Default)]
@@ -178,19 +174,22 @@ fn change_value(
 
 fn find_and_assign_villagers(
     mut ev_occupancy: EventReader<OccupancyChange>,
-    mut villager_query: Query<(Entity, &mut PlanetVillager, &PlanetSticker)>,
+    mut wandering_query: Query<(Entity, &mut VillagerWandering, &PlanetSticker)>,
+    mut working_query: Query<(Entity, &mut VillagerWorking, &PlanetSticker)>,
     mut occupable_query: Query<(&mut Occupable, &PlanetSticker)>,
+    mut commands: Commands,
 ) {
     for ev in ev_occupancy.read() {
         if ev.change == 1 {
-            for (villager_entity, mut villager, sticker) in villager_query.iter_mut() {
+            for (villager_entity, mut villager, sticker) in wandering_query.iter_mut() {
                 if let Ok((mut occupable, occupable_sticker)) =
                     occupable_query.get_mut(ev.occupable)
                 {
                     if sticker.planet == occupable_sticker.planet
-                        && villager.current_occupable == None
                     {
-                        villager.current_occupable = Some(ev.occupable);
+                        commands.entity(villager_entity)
+                        .remove::<VillagerWandering>()
+                        .insert(VillagerWorking { current_occupable: ev.occupable });
                         occupable.workers.push(villager_entity);
                         return;
                     }
@@ -199,10 +198,12 @@ fn find_and_assign_villagers(
         } else if ev.change == -1 {
             if let Ok((mut occupable, occupable_sticker)) = occupable_query.get_mut(ev.occupable) {
                 if let Some(worker) = occupable.workers.last() {
-                    if let Ok((_, mut villager, _)) = villager_query.get_mut(*worker) {
-                        villager.current_occupable = None;
-                        villager.current_state = PlanetVillagerState::Wandering;
+                    if let Ok((villager_entity, mut villager, _)) = working_query.get_mut(*worker) {
+                        commands.entity(villager_entity)
+                        .remove::<VillagerWorking>()
+                        .insert(VillagerWandering::default());
                         occupable.workers.pop();
+                        println!("Here")
                     }
                 }
             }
