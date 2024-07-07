@@ -32,8 +32,8 @@ impl Plugin for SpritesheetAnimatorPlugin {
 }
 
 
-fn handle_animators(mut animators: Query<(&mut SpritesheetAnimator, &mut Sprite)>, time: Res<Time>) {
-    for (mut animator, mut sprite) in animators.iter_mut() {
+fn handle_animators(mut animators: Query<&mut SpritesheetAnimator>, time: Res<Time>) {
+    for mut animator in animators.iter_mut() {
         if animator.current_animation_index != animator.last_animation_index as u32 {
             animator.current_frame_index = 0;
             animator.current_frame_time = 0.;

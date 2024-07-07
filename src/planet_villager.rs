@@ -5,6 +5,7 @@ use crate::looping_float::LoopingFloat;
 use crate::occupable::{self, Occupable, OccupableType};
 use crate::planet_sticker::PlanetSticker;
 use crate::{spritesheet_animator, AnimationIndices, AnimationTimer};
+use rand::Rng;
 
 #[derive(PartialEq)]
 pub enum PlanetVillagerState {
@@ -68,6 +69,9 @@ fn handle_wandering(
                 villager.current_destination = Some(sticker.position_degrees);
             }
         }
+    }else if villager.current_destination.is_none() {
+        villager.current_state = PlanetVillagerState::Running;
+        villager.current_destination = Some(villager_sticker.position_degrees + rand::thread_rng().gen_range(-30.0..30.0))
     }
 }
 
@@ -85,6 +89,7 @@ fn handle_running(
                 villager.current_state = PlanetVillagerState::Working;
             } else {
                 villager.current_state = PlanetVillagerState::Wandering;
+                villager.current_destination = None;
             }
         }
         let dir = calculate_dir(sticker.position_degrees, destination);
