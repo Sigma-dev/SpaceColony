@@ -5,6 +5,7 @@ mod occupables {
     pub mod occupable_counter;
 }
 
+use occupable::{NewOccupable, Occupable, OccupableBundle, OccupableType, ResourceType};
 use occupables::*;
 mod planet;
 mod planet_sticker;
@@ -15,7 +16,12 @@ mod spritesheet_animator;
 extern crate approx;
 
 use bevy::{
-    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, render::render_resource::FilterMode, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, utils::{self, HashMap}, window::PresentMode
+    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+    render::render_resource::FilterMode,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    utils::{self, HashMap},
+    window::PresentMode,
 };
 use bevy_mod_picking::prelude::*;
 use looping_float::LoopingFloat;
@@ -24,7 +30,7 @@ use planet_sticker::PlanetSticker;
 
 #[derive(Resource, Default)]
 struct Resources {
-    stored: HashMap<i32, i32>
+    stored: HashMap<i32, i32>,
 }
 
 fn main() {
@@ -45,7 +51,7 @@ fn main() {
             planet_villager::PlanetVillagerPlugin,
             occupable::OccupablePlugin,
             occupable_counter::OccupableCounterPlugin,
-            spritesheet_animator::SpritesheetAnimatorPlugin
+            spritesheet_animator::SpritesheetAnimatorPlugin,
         ))
         .add_plugins(DefaultPickingPlugins)
         .add_systems(Startup, setup)
@@ -71,28 +77,32 @@ fn setup(
         ..default()
     });
 
-    let main_planet = commands.spawn(planet::PlanetBundle::new(100., meshes, materials)).id();
+    let main_planet = commands
+        .spawn(planet::PlanetBundle::new(100., meshes, materials))
+        .id();
     for tree_index in 0..2 {
         commands.spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    anchor: bevy::sprite::Anchor::BottomCenter,
-                    ..default()
-                },
-                texture: asset_server.load("environment/tree/tree.png"),
-                ..default()
-            },
-            planet_sticker::PlanetSticker {
-                planet: main_planet,
-                position_degrees: LoopingFloat::new(0. + tree_index as f32 * 180.),
-            },
-            occupable::Occupable {
-                selected: false,
-                workers: Vec::new(),
-                max_workers: 1,
-                occupable_type: occupable::OccupableType::Cutting,
-                produced_resource: occupable::ResourceType::Wood
-            },
+            OccupableBundle::new(
+                asset_server.load("environment/tree.png"),
+                main_planet,
+                tree_index as f32 * 180.,
+                OccupableType::Cutting,
+                ResourceType::Wood,
+            ),
+            On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
+                occupable.selected = true
+            }),
+        ));
+    }
+    for bush_index in 0..2 {
+        commands.spawn((
+            OccupableBundle::new(
+                asset_server.load("environment/bush.png"),
+                main_planet,
+                (bush_index + 1) as f32 * 33.,
+                OccupableType::Foraging,
+                ResourceType::Food,
+            ),
             On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
                 occupable.selected = true
             }),
@@ -108,17 +118,16 @@ fn setup(
                 },
                 ..default()
             },
-            spritesheet_animator::SpritesheetAnimator::new( UVec2{x: 16, y: 16}, vec![
-                vec![0.6; 2], 
-                vec![0.2; 2],
-                vec![0.2; 4],
-            ]),
+            spritesheet_animator::SpritesheetAnimator::new(
+                UVec2 { x: 16, y: 16 },
+                vec![vec![0.6; 2], vec![0.2; 2], vec![0.2; 4], vec![0.2; 2]],
+            ),
             planet_sticker::PlanetSticker {
                 planet: main_planet,
                 position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
             },
             planet_villager::PlanetVillager {
-                name: format!("Villager{villager_index}")
+                name: format!("Villager{villager_index}"),
             },
             planet_villager::VillagerWandering::default(),
         ));

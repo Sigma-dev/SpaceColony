@@ -11,6 +11,7 @@ pub enum PlanetVillagerAnimationState {
     Idle = 0,
     Run = 1,
     Cut = 2,
+    Forage = 3,
 }
 
 #[derive(Component)]
@@ -125,7 +126,7 @@ fn handle_working_villagers(
     {
         if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_occupable) {
             let mut target = occupable_sticker.position_degrees;
-            if occupable.occupable_type == OccupableType::Cutting {
+            if occupable.occupable_type != OccupableType::Interior {
                 target += sticker
                     .position_degrees
                     .direction(occupable_sticker.position_degrees.to_f32())
@@ -140,7 +141,12 @@ fn handle_working_villagers(
                 target,
                 15.,
             ) {
-                animator.current_animation_index = PlanetVillagerAnimationState::Cut as u32;;
+                let anim = match occupable.occupable_type {
+                    OccupableType::Cutting => PlanetVillagerAnimationState::Cut,
+                    OccupableType::Foraging => PlanetVillagerAnimationState::Forage,
+                    OccupableType::Interior => PlanetVillagerAnimationState::Idle
+                };
+                animator.current_animation_index = anim as u32;
             }
 
             *visibility = if occupable.occupable_type == OccupableType::Interior {

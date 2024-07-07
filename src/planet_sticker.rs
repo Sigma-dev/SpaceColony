@@ -22,8 +22,8 @@ fn stick_to_planet(mut sticker_query: Query<(&mut Transform, &PlanetSticker)>, t
         if let Ok((planet_transform, planet)) = targets.get(sticker.planet) {
             let center = planet_transform.translation();
             let pos_rad = sticker.position_degrees.to_f32().to_radians();
-            transform.translation.x = center.x + pos_rad.sin() * planet.radius;
-            transform.translation.y = center.y + pos_rad.cos() * planet.radius;
+            transform.translation.x = center.x + pos_rad.sin() * (planet.radius - 0.5);
+            transform.translation.y = center.y + pos_rad.cos() * (planet.radius - 0.5);
 
             let direction = Vec2::new(pos_rad.sin(), pos_rad.cos());
             let rotation = Quat::from_rotation_arc(Vec3::Y, Vec3::new(direction.x, direction.y, 0.0).normalize());

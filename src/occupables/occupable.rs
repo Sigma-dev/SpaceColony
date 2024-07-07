@@ -4,11 +4,7 @@ use bevy::{prelude::*, render::view::visibility};
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    button_value,
-    occupable_counter::{self, OccupableCounter},
-    planet_sticker::PlanetSticker,
-    planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking},
-    Resources,
+    button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet, planet_sticker::{self, PlanetSticker}, planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking}, Resources
 };
 
 #[derive(Resource, Default)]
@@ -19,6 +15,7 @@ pub struct SelectedOccupable {
 #[derive(PartialEq)]
 pub enum OccupableType {
     Cutting,
+    Foraging,
     Interior,
 }
 
@@ -42,6 +39,44 @@ pub enum ResourceType {
     Food,
     Wood,
 }
+
+#[derive(Bundle)]
+pub struct OccupableBundle {
+    sprite_bundle: SpriteBundle,
+    planet_sticker: PlanetSticker,
+    occupable: Occupable,
+}
+
+pub trait NewOccupable {
+    fn new(texture: Handle<Image>, planet: Entity, position_degrees: f32, occupable_type: OccupableType, produced_resource: ResourceType) -> Self;
+}
+
+impl NewOccupable for OccupableBundle {
+    fn new(texture: Handle<Image>, planet: Entity, position_degrees: f32, occupable_type: OccupableType, produced_resource: ResourceType) -> Self {
+        Self {
+            sprite_bundle: SpriteBundle {
+                sprite: Sprite {
+                    anchor: bevy::sprite::Anchor::BottomCenter,
+                    ..default()
+                },
+                texture: texture,
+                ..default()
+            },
+            planet_sticker: planet_sticker::PlanetSticker {
+                planet: planet,
+                position_degrees: LoopingFloat::new(position_degrees),
+            },
+            occupable: Occupable {
+                selected: false,
+                workers: Vec::new(),
+                max_workers: 1,
+                occupable_type: occupable_type,
+                produced_resource: produced_resource
+            },
+        }
+    }
+}
+
 
 pub struct OccupablePlugin;
 
