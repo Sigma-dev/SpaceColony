@@ -134,7 +134,7 @@ fn spawn_symbol(
             texture: asset_server.load("ui/symbols.png"),
             atlas: TextureAtlas {
                 layout: texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
-                    Vec2::new(8.0, 8.0),
+                    UVec2::new(8, 8),
                     10,
                     2,
                     None,
@@ -259,7 +259,6 @@ fn find_and_assign_villagers(
                             .remove::<VillagerWorking>()
                             .insert(VillagerWandering::default());
                         occupable.workers.pop();
-                        println!("Here")
                     }
                 }
             }

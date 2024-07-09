@@ -53,7 +53,7 @@ fn main() {
             occupable_counter::OccupableCounterPlugin,
             spritesheet_animator::SpritesheetAnimatorPlugin,
         ))
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins((DefaultPickingPlugins))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
@@ -132,4 +132,61 @@ fn setup(
             planet_villager::VillagerWandering::default(),
         ));
     }
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                width: Val::Percent(100.),
+                flex_direction: FlexDirection::Row,
+                padding: UiRect::all(Val::Px(5.)),
+                column_gap: Val::Px(8.),
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn((
+                NodeBundle {
+                    style: Style {
+                        width: Val::Px(32.0),
+                        height: Val::Px(32.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+            UiImage::new(asset_server.load("ui/icons/villager.png")),
+            ));
+            parent.spawn((
+                NodeBundle {
+                    style: Style {
+                        width: Val::Px(160.0),
+                        height: Val::Px(32.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+            UiImage::new(asset_server.load("ui/progress_bar/ProgressBar.png")),
+            ));
+            parent.spawn((
+                NodeBundle {
+                    style: Style {
+                        width: Val::Px(32.0),
+                        height: Val::Px(32.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+            UiImage::new(asset_server.load("ui/icons/wood.png")),
+            ));
+            parent.spawn((
+                TextBundle::from_section(
+                    "0",
+                    TextStyle {
+                        font: asset_server.load("fonts/pixel.ttf"),
+                        font_size: 30.0,
+                        ..default()
+                    },
+                ),
+                Label,
+            ));
+        });
 }
