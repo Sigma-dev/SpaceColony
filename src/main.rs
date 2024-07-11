@@ -5,33 +5,25 @@ mod occupables {
     pub mod occupable_counter;
 }
 
-use occupable::{NewOccupable, Occupable, OccupableBundle, OccupableType, ResourceType};
+use occupable::*;
 use occupables::*;
 mod planet;
 mod planet_sticker;
 mod planet_villager;
 mod spritesheet_animator;
-
-#[macro_use]
-extern crate approx;
+mod resources;
+mod ui;
 
 use bevy::{
-    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
-    render::render_resource::FilterMode,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    utils::{self, HashMap},
+    render::render_resource::{AsBindGroup, ShaderRef},
     window::PresentMode,
 };
 use bevy_mod_picking::prelude::*;
 use looping_float::LoopingFloat;
 use planet::NewPlanet;
-use planet_sticker::PlanetSticker;
-
-#[derive(Resource, Default)]
-struct Resources {
-    stored: HashMap<i32, i32>,
-}
+use resources::ResourcesPlugin;
+use ui::CustomUiPlugin;
 
 fn main() {
     App::new()
@@ -52,20 +44,21 @@ fn main() {
             occupable::OccupablePlugin,
             occupable_counter::OccupableCounterPlugin,
             spritesheet_animator::SpritesheetAnimatorPlugin,
+            ResourcesPlugin,
+            CustomUiPlugin
         ))
-        .add_plugins((DefaultPickingPlugins))
+        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<CustomMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
-        .insert_resource(Resources::default())
         .run();
 }
 
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    meshes: ResMut<Assets<Mesh>>,
+    materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
@@ -127,66 +120,21 @@ fn setup(
                 position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
             },
             planet_villager::PlanetVillager {
-                name: format!("Villager{villager_index}"),
+                _name: format!("Villager{villager_index}"),
             },
             planet_villager::VillagerWandering::default(),
         ));
     }
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                width: Val::Percent(100.),
-                flex_direction: FlexDirection::Row,
-                padding: UiRect::all(Val::Px(5.)),
-                column_gap: Val::Px(8.),
-                ..default()
-            },
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: Val::Px(32.0),
-                        height: Val::Px(32.0),
-                        ..default()
-                    },
-                    ..default()
-                },
-            UiImage::new(asset_server.load("ui/icons/villager.png")),
-            ));
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: Val::Px(160.0),
-                        height: Val::Px(32.0),
-                        ..default()
-                    },
-                    ..default()
-                },
-            UiImage::new(asset_server.load("ui/progress_bar/ProgressBar.png")),
-            ));
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: Val::Px(32.0),
-                        height: Val::Px(32.0),
-                        ..default()
-                    },
-                    ..default()
-                },
-            UiImage::new(asset_server.load("ui/icons/wood.png")),
-            ));
-            parent.spawn((
-                TextBundle::from_section(
-                    "0",
-                    TextStyle {
-                        font: asset_server.load("fonts/pixel.ttf"),
-                        font_size: 30.0,
-                        ..default()
-                    },
-                ),
-                Label,
-            ));
-        });
 }
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+struct CustomMaterial {
+    #[uniform(0)]
+    progress: f32,
+}
+
+impl UiMaterial for CustomMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/progress_bar/shader.wgsl".into()
+    }
+} 

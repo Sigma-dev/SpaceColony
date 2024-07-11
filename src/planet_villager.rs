@@ -1,10 +1,9 @@
 use bevy::prelude::*;
-use bevy::render::view::visibility;
 
 use crate::looping_float::LoopingFloat;
-use crate::occupable::{self, Occupable, OccupableType};
+use crate::occupable::{Occupable, OccupableType};
 use crate::planet_sticker::PlanetSticker;
-use crate::{spritesheet_animator};
+use crate::spritesheet_animator;
 use rand::Rng;
 
 pub enum PlanetVillagerAnimationState {
@@ -16,7 +15,7 @@ pub enum PlanetVillagerAnimationState {
 
 #[derive(Component)]
 pub struct PlanetVillager {
-    pub name: String,
+    pub _name: String,
 }
 
 #[derive(Component)]
@@ -62,8 +61,8 @@ fn handle_wandering_villagers(
 ) {
     for (
         mut wandering,
-        mut sticker,
-        mut sprite,
+        sticker,
+        sprite,
         mut visibility,
         mut animator,
     ) in villager_query.iter_mut()
@@ -106,7 +105,7 @@ fn walk_towards(
     let dir = sticker.position_degrees.direction(destination.to_f32()) as f32;
     sticker.position_degrees += dir * speed * elapsed_seconds;
     sprite.flip_x = seperating < 0.;
-    animator.current_animation_index = PlanetVillagerAnimationState::Run as u32;;
+    animator.current_animation_index = PlanetVillagerAnimationState::Run as u32;
     return false;
 }
 
@@ -121,7 +120,7 @@ fn handle_working_villagers(
     occupable_query: Query<(&Occupable, &PlanetSticker), Without<VillagerWorking>>,
     time: Res<Time>,
 ) {
-    for (mut worker, mut sticker, mut visibility, mut sprite, mut animator) in
+    for (worker, sticker, mut visibility, sprite, mut animator) in
         villager_query.iter_mut()
     {
         if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_occupable) {

@@ -1,6 +1,5 @@
-use crate::{occupables::*};
-use bevy::{prelude::*, render::view::visibility, transform};
-use num_traits::ToPrimitive;
+use crate::occupables::*;
+use bevy::prelude::*;
 use occupable::OccupancyChange;
 
 #[derive(Component)]
@@ -24,7 +23,7 @@ fn handle_events(
     mut ev_occupancy: EventReader<OccupancyChange>,
 ) {
     for ev in ev_occupancy.read() {
-        if let Ok(occupable) = occupables_query.get(ev.occupable) {
+        if let Ok(_) = occupables_query.get(ev.occupable) {
             for (mut atlas, parent, mut counter) in counters_query.iter_mut() {
                 if parent.get() == ev.occupable {
                     counter.count += ev.change;
@@ -37,25 +36,24 @@ fn handle_events(
 
 fn handle_counters(
     mut counters_query: Query<(
-        &mut TextureAtlas,
         &Parent,
         &mut OccupableCounter,
         &mut Visibility,
     )>,
     occupables_query: Query<(Entity, &occupable::Occupable)>,
-    mut visibility_query: Query<(&mut Visibility, &GlobalTransform), Without<OccupableCounter>>,
+    mut visibility_query: Query<&mut Visibility, Without<OccupableCounter>>,
     selected_occupable: Res<occupable::SelectedOccupable>,
 ) {
-    for (mut atlas, parent, mut counter, mut visibility) in counters_query.iter_mut() {
+    for (parent, counter, visibility) in counters_query.iter_mut() {
         if let Ok((occupable_entity, occupable)) = occupables_query.get(parent.get()) {
             handle_selected(&selected_occupable, visibility, occupable_entity);
-            if let Ok((mut minus_vis, transform)) = visibility_query.get_mut(counter.minus_button) {
+            if let Ok(mut minus_vis) = visibility_query.get_mut(counter.minus_button) {
                 *minus_vis = Visibility::Inherited;
                 if occupable.workers.len() == 0 {
                     *minus_vis = Visibility::Hidden;
                 }
             }
-            if let Ok((mut plus_vis, transform)) = visibility_query.get_mut(counter.plus_button) {
+            if let Ok(mut plus_vis) = visibility_query.get_mut(counter.plus_button) {
                 *plus_vis = Visibility::Inherited;
                 if occupable.workers.len() as i32 >= occupable.max_workers {
                     *plus_vis = Visibility::Hidden;

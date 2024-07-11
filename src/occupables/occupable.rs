@@ -1,10 +1,13 @@
-use std::process::Child;
-
-use bevy::{prelude::*, render::view::visibility};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet, planet_sticker::{self, PlanetSticker}, planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking}, Resources
+    button_value,
+    looping_float::LoopingFloat,
+    occupable_counter::{self, OccupableCounter},
+    planet_sticker::{self, PlanetSticker},
+    planet_villager::*,
+    resources,
 };
 
 #[derive(Resource, Default)]
@@ -48,11 +51,23 @@ pub struct OccupableBundle {
 }
 
 pub trait NewOccupable {
-    fn new(texture: Handle<Image>, planet: Entity, position_degrees: f32, occupable_type: OccupableType, produced_resource: ResourceType) -> Self;
+    fn new(
+        texture: Handle<Image>,
+        planet: Entity,
+        position_degrees: f32,
+        occupable_type: OccupableType,
+        produced_resource: ResourceType,
+    ) -> Self;
 }
 
 impl NewOccupable for OccupableBundle {
-    fn new(texture: Handle<Image>, planet: Entity, position_degrees: f32, occupable_type: OccupableType, produced_resource: ResourceType) -> Self {
+    fn new(
+        texture: Handle<Image>,
+        planet: Entity,
+        position_degrees: f32,
+        occupable_type: OccupableType,
+        produced_resource: ResourceType,
+    ) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 sprite: Sprite {
@@ -71,32 +86,32 @@ impl NewOccupable for OccupableBundle {
                 workers: Vec::new(),
                 max_workers: 1,
                 occupable_type: occupable_type,
-                produced_resource: produced_resource
+                produced_resource: produced_resource,
             },
         }
     }
 }
 
-
 pub struct OccupablePlugin;
 
 impl Plugin for OccupablePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (select_entity_system, handle_selected))
-            .add_systems(Update, (find_and_assign_villagers))
+        app.add_systems(Update, select_entity_system)
+            .add_systems(Update, find_and_assign_villagers)
             .add_systems(FixedUpdate, produce_resources)
-            .add_systems(PostStartup, spawn_ui);
+            .add_systems(PostStartup, spawn_ui)
+            .add_event::<OccupancyChange>();
     }
 }
 
 fn spawn_ui(
-    q: Query<(Entity, &Occupable)>,
+    q: Query<Entity, With<Occupable>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     commands.init_resource::<SelectedOccupable>();
-    for (e, occupable) in q.iter() {
+    for e in q.iter() {
         let minus = spawn_button(
             &mut commands,
             &asset_server,
@@ -123,16 +138,23 @@ fn spawn_ui(
 }
 
 fn spawn_symbol(
-    mut commands: &mut Commands,
-    mut texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
+    commands: &mut Commands,
+    texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
     asset_server: &Res<AssetServer>,
     index: i32,
     offset: Vec3,
 ) -> Entity {
     return commands
-        .spawn((SpriteSheetBundle {
-            texture: asset_server.load("ui/symbols.png"),
-            atlas: TextureAtlas {
+        .spawn((
+            SpriteBundle {
+                texture: asset_server.load("ui/symbols.png"),
+                transform: Transform {
+                    translation: offset,
+                    ..Default::default()
+                },
+                ..default()
+            },
+            TextureAtlas {
                 layout: texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
                     UVec2::new(8, 8),
                     10,
@@ -142,19 +164,14 @@ fn spawn_symbol(
                 )),
                 index: index as usize,
             },
-            transform: Transform {
-                translation: offset,
-                ..Default::default()
-            },
-            ..default()
-        },))
+        ))
         .id();
 }
 
 fn spawn_counter(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     asset_server: &Res<AssetServer>,
-    mut texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
+    texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
     minus: Entity,
     plus: Entity,
 ) -> Entity {
@@ -180,9 +197,9 @@ fn spawn_counter(
 }
 
 fn spawn_button(
-    mut commands: &mut Commands,
+    commands: &mut Commands,
     asset_server: &Res<AssetServer>,
-    mut texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
+    texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
     minus: bool,
 ) -> Entity {
     let offset = Vec3 {
@@ -205,7 +222,6 @@ fn change_value(
     mut ev_occupancy: EventWriter<OccupancyChange>,
     event: Listener<Pointer<Click>>,
     button_query: Query<(&button_value::Buttonvalue, &Parent)>,
-    villager_query: Query<(&mut PlanetVillager, &PlanetSticker)>,
     counter_query: Query<&Parent, With<OccupableCounter>>,
     occupable_query: Query<Entity, With<Occupable>>,
 ) {
@@ -227,14 +243,14 @@ fn change_value(
 
 fn find_and_assign_villagers(
     mut ev_occupancy: EventReader<OccupancyChange>,
-    mut wandering_query: Query<(Entity, &mut VillagerWandering, &PlanetSticker)>,
-    mut working_query: Query<(Entity, &mut VillagerWorking, &PlanetSticker)>,
+    mut wandering_query: Query<(Entity, &PlanetSticker), With<VillagerWandering>>,
+    mut working_query: Query<Entity, With<VillagerWorking>>,
     mut occupable_query: Query<(&mut Occupable, &PlanetSticker)>,
     mut commands: Commands,
 ) {
     for ev in ev_occupancy.read() {
         if ev.change == 1 {
-            for (villager_entity, mut villager, sticker) in wandering_query.iter_mut() {
+            for (villager_entity, sticker) in wandering_query.iter_mut() {
                 if let Ok((mut occupable, occupable_sticker)) =
                     occupable_query.get_mut(ev.occupable)
                 {
@@ -251,9 +267,9 @@ fn find_and_assign_villagers(
                 }
             }
         } else if ev.change == -1 {
-            if let Ok((mut occupable, occupable_sticker)) = occupable_query.get_mut(ev.occupable) {
+            if let Ok((mut occupable, _)) = occupable_query.get_mut(ev.occupable) {
                 if let Some(worker) = occupable.workers.last() {
-                    if let Ok((villager_entity, mut villager, _)) = working_query.get_mut(*worker) {
+                    if let Ok(villager_entity) = working_query.get_mut(*worker) {
                         commands
                             .entity(villager_entity)
                             .remove::<VillagerWorking>()
@@ -261,25 +277,6 @@ fn find_and_assign_villagers(
                         occupable.workers.pop();
                     }
                 }
-            }
-        }
-    }
-}
-
-fn handle_selected(
-    mut sprite_children: Query<(&mut Visibility, &Parent)>,
-    occupables: Query<&Occupable>,
-    mut selected_occupable: Res<SelectedOccupable>,
-) {
-    //selected_occupable
-    return;
-    for (mut visibility, parent) in sprite_children.iter_mut() {
-        let occupable = occupables.get(parent.get());
-        if let Ok(valid) = occupable {
-            if valid.selected {
-                *visibility = Visibility::Visible
-            } else {
-                *visibility = Visibility::Hidden
             }
         }
     }
@@ -298,11 +295,10 @@ fn select_entity_system(
 }
 
 fn produce_resources(
-    mut working_query: Query<(Entity, &mut VillagerWorking, &PlanetSticker)>,
-    mut occupable_query: Query<(&mut Occupable)>,
-    mut resources: ResMut<Resources>,
+    mut occupable_query: Query<&mut Occupable>,
+    mut resources: ResMut<resources::Resources>,
 ) {
-    for (occupable) in occupable_query.iter_mut() {
+    for occupable in occupable_query.iter_mut() {
         let index = occupable.produced_resource as i32;
         let current_value = resources.stored.get(&index).copied().unwrap_or(0);
         let updated_value = current_value + occupable.workers.len() as i32;
