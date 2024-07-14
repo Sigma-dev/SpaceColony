@@ -59,7 +59,7 @@ fn spawn_ui(
                         height: Val::Px(32.0),
                         ..default()
                     },
-                    material: custom_materials.add(CustomMaterial { progress: 0.5 }),
+                    material: custom_materials.add(CustomMaterial { progress: 0. }),
                     ..default()
                 },
                 UiImage::new(asset_server.load("ui/progress_bar/ProgressBar.png")),
@@ -111,7 +111,7 @@ fn update_resource_bars(
     for (handle, resource_text) in bars.iter_mut() {
         if let Some(amount) = resources.stored.get(&(resource_text.resource_type as i32)) {
             if let Some(material) = materials.get_mut(handle) {
-                material.progress = (*amount as f32) / 1000.0 as f32;
+                material.progress = (*amount as f32) / 10.0 as f32;
             }
         }
     }

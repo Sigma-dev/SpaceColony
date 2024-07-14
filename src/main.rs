@@ -13,6 +13,7 @@ mod planet_villager;
 mod spritesheet_animator;
 mod resources;
 mod ui;
+mod villager_spawn;
 
 use bevy::{
     prelude::*,
@@ -21,7 +22,8 @@ use bevy::{
 };
 use bevy_mod_picking::prelude::*;
 use looping_float::LoopingFloat;
-use planet::NewPlanet;
+use planet::{NewPlanet, Planets};
+use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
 use ui::CustomUiPlugin;
 
@@ -45,7 +47,9 @@ fn main() {
             occupable_counter::OccupableCounterPlugin,
             spritesheet_animator::SpritesheetAnimatorPlugin,
             ResourcesPlugin,
-            CustomUiPlugin
+            CustomUiPlugin,
+            villager_spawn::VillagerSpawnPlugin,
+            planet::PlanetsPlugin
         ))
         .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<CustomMaterial>::default()))
         .add_systems(Startup, setup)
@@ -59,6 +63,7 @@ fn setup(
     asset_server: Res<AssetServer>,
     meshes: ResMut<Assets<Mesh>>,
     materials: ResMut<Assets<ColorMaterial>>,
+    mut planets: ResMut<Planets>
 ) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
@@ -73,6 +78,7 @@ fn setup(
     let main_planet = commands
         .spawn(planet::PlanetBundle::new(100., meshes, materials))
         .id();
+    planets.main = Some(main_planet);
     for tree_index in 0..2 {
         commands.spawn((
             OccupableBundle::new(
@@ -102,6 +108,8 @@ fn setup(
         ));
     }
     for villager_index in 0..2 {
+        spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())
+        /*
         commands.spawn((
             SpriteBundle {
                 texture: asset_server.load("player/player.png"),
@@ -124,6 +132,7 @@ fn setup(
             },
             planet_villager::VillagerWandering::default(),
         ));
+         */
     }
 }
 

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::looping_float::LoopingFloat;
 use crate::occupable::{Occupable, OccupableType};
-use crate::planet_sticker::PlanetSticker;
+use crate::planet_sticker::{self, PlanetSticker};
 use crate::resources::Resources;
 use crate::spritesheet_animator;
 use rand::Rng;
@@ -165,4 +165,29 @@ fn handle_working_villagers(
             };
         }
     }
+}
+
+pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, planet: Entity, position_degrees: f32, name: String) {
+    commands.spawn((
+        SpriteBundle {
+            texture: asset_server.load("player/player.png"),
+            sprite: Sprite {
+                anchor: bevy::sprite::Anchor::BottomCenter,
+                ..default()
+            },
+            ..default()
+        },
+        spritesheet_animator::SpritesheetAnimator::new(
+            UVec2 { x: 16, y: 16 },
+            vec![vec![0.6; 2], vec![0.2; 2], vec![0.2; 4], vec![0.2; 2]],
+        ),
+        planet_sticker::PlanetSticker {
+            planet: planet,
+            position_degrees: LoopingFloat::new(position_degrees),
+        },
+        PlanetVillager {
+            _name: format!("{}", name),
+        },
+        VillagerWandering::default(),
+    ));
 }

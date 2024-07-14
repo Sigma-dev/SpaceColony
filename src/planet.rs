@@ -14,6 +14,11 @@ pub struct PlanetBundle {
     pub planet: Planet,
 }
 
+#[derive(Resource, Default)]
+pub struct Planets {
+    pub main: Option<Entity>,
+}
+
 pub trait NewPlanet {
     fn new(radius: f32, meshes: ResMut<Assets<Mesh>>, materials: ResMut<Assets<ColorMaterial>>) -> Self;
 }
@@ -29,5 +34,13 @@ impl NewPlanet for PlanetBundle {
             },
             planet: Planet { radius: radius },
         }
+    }
+}
+
+pub struct PlanetsPlugin;
+
+impl Plugin for PlanetsPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(Planets::default());
     }
 }
