@@ -98,7 +98,6 @@ impl Plugin for OccupablePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, select_entity_system)
             .add_systems(Update, find_and_assign_villagers)
-            .add_systems(FixedUpdate, produce_resources)
             .add_systems(PostStartup, spawn_ui)
             .add_event::<OccupancyChange>();
     }
@@ -260,6 +259,7 @@ fn find_and_assign_villagers(
                             .remove::<VillagerWandering>()
                             .insert(VillagerWorking {
                                 current_occupable: ev.occupable,
+                                production_interval: 1.0
                             });
                         occupable.workers.push(villager_entity);
                         return;
@@ -291,17 +291,5 @@ fn select_entity_system(
         if query.get(event.target).is_ok() {
             selected_occuppable.occupable = Some(event.target);
         }
-    }
-}
-
-fn produce_resources(
-    mut occupable_query: Query<&mut Occupable>,
-    mut resources: ResMut<resources::Resources>,
-) {
-    for occupable in occupable_query.iter_mut() {
-        let index = occupable.produced_resource as i32;
-        let current_value = resources.stored.get(&index).copied().unwrap_or(0);
-        let updated_value = current_value + occupable.workers.len() as i32;
-        resources.stored.insert(index, updated_value);
     }
 }

@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::looping_float::LoopingFloat;
 use crate::occupable::{Occupable, OccupableType};
 use crate::planet_sticker::PlanetSticker;
+use crate::resources::Resources;
 use crate::spritesheet_animator;
 use rand::Rng;
 
@@ -21,6 +22,7 @@ pub struct PlanetVillager {
 #[derive(Component)]
 pub struct VillagerWorking {
     pub current_occupable: Entity,
+    pub production_interval: f32,
 }
 
 #[derive(Component)]
@@ -119,8 +121,9 @@ fn handle_working_villagers(
     )>,
     occupable_query: Query<(&Occupable, &PlanetSticker), Without<VillagerWorking>>,
     time: Res<Time>,
+    mut resources: ResMut<Resources>
 ) {
-    for (worker, sticker, mut visibility, sprite, mut animator) in
+    for (mut worker, sticker, mut visibility, sprite, mut animator) in
         villager_query.iter_mut()
     {
         if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_occupable) {
@@ -146,6 +149,13 @@ fn handle_working_villagers(
                     OccupableType::Interior => PlanetVillagerAnimationState::Idle
                 };
                 animator.current_animation_index = anim as u32;
+                worker.production_interval -= time.delta_seconds();
+                if worker.production_interval <= 0.0 {
+                    let index = occupable.produced_resource as i32;
+                    let current_value = resources.stored.get(&index).copied().unwrap_or(0);
+                    resources.stored.insert(index, current_value + 1 as i32);
+                    worker.production_interval = 1.0;
+                }
             }
 
             *visibility = if occupable.occupable_type == OccupableType::Interior {
