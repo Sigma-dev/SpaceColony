@@ -1,4 +1,4 @@
-use crate::occupables::*;
+use crate::{occupables::*, planet_sticker::{self, PlanetSticker}, planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking}};
 use bevy::prelude::*;
 use occupable::OccupancyChange;
 
@@ -40,12 +40,13 @@ fn handle_counters(
         &mut OccupableCounter,
         &mut Visibility,
     )>,
-    occupables_query: Query<(Entity, &occupable::Occupable)>,
+    occupables_query: Query<(Entity, &occupable::Occupable, &planet_sticker::PlanetSticker)>,
     mut visibility_query: Query<&mut Visibility, Without<OccupableCounter>>,
     selected_occupable: Res<occupable::SelectedOccupable>,
+    villager_query: Query<&PlanetSticker, With<VillagerWandering>>
 ) {
     for (parent, counter, visibility) in counters_query.iter_mut() {
-        if let Ok((occupable_entity, occupable)) = occupables_query.get(parent.get()) {
+        if let Ok((occupable_entity, occupable, occupable_sticker)) = occupables_query.get(parent.get()) {
             handle_selected(&selected_occupable, visibility, occupable_entity);
             if let Ok(mut minus_vis) = visibility_query.get_mut(counter.minus_button) {
                 *minus_vis = Visibility::Inherited;
@@ -55,8 +56,20 @@ fn handle_counters(
             }
             if let Ok(mut plus_vis) = visibility_query.get_mut(counter.plus_button) {
                 *plus_vis = Visibility::Inherited;
-                if occupable.workers.len() as i32 >= occupable.max_workers {
+                if occupable.workers.len() as u32 >= occupable.max_workers {
                     *plus_vis = Visibility::Hidden;
+                }
+                for villager_sticker in villager_query.iter() {
+                    let mut found = false;
+                    if villager_sticker.planet == occupable_sticker.planet {
+                        found = true
+                    }
+                    if !found { 
+                        *plus_vis = Visibility::Hidden; 
+                    }
+                }
+                if villager_query.is_empty() {
+                    *plus_vis = Visibility::Hidden; 
                 }
             }
         }

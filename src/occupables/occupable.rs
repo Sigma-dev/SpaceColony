@@ -33,7 +33,7 @@ pub struct Occupable {
     pub selected: bool,
     pub workers: Vec<Entity>,
     pub occupable_type: OccupableType,
-    pub max_workers: i32,
+    pub max_workers: u32,
     pub produced_resource: ResourceType,
 }
 
@@ -57,6 +57,7 @@ pub trait NewOccupable {
         position_degrees: f32,
         occupable_type: OccupableType,
         produced_resource: ResourceType,
+        max_workers: u32,
     ) -> Self;
 }
 
@@ -67,6 +68,7 @@ impl NewOccupable for OccupableBundle {
         position_degrees: f32,
         occupable_type: OccupableType,
         produced_resource: ResourceType,
+        max_workers: u32,
     ) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
@@ -74,19 +76,19 @@ impl NewOccupable for OccupableBundle {
                     anchor: bevy::sprite::Anchor::BottomCenter,
                     ..default()
                 },
-                texture: texture,
+                texture,
                 ..default()
             },
             planet_sticker: planet_sticker::PlanetSticker {
-                planet: planet,
+                planet,
                 position_degrees: LoopingFloat::new(position_degrees),
             },
             occupable: Occupable {
                 selected: false,
                 workers: Vec::new(),
-                max_workers: 1,
-                occupable_type: occupable_type,
-                produced_resource: produced_resource,
+                max_workers,
+                occupable_type,
+                produced_resource,
             },
         }
     }

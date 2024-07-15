@@ -86,6 +86,7 @@ fn setup(
                 tree_index as f32 * 180.,
                 OccupableType::Cutting,
                 ResourceType::Wood,
+                1
             ),
             On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
                 occupable.selected = true
@@ -100,6 +101,7 @@ fn setup(
                 (bush_index + 1) as f32 * 33.,
                 OccupableType::Foraging,
                 ResourceType::Food,
+                2
             ),
             On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
                 occupable.selected = true
