@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy::*;
 use node_bundles::NodeBundle;
+use render::render_resource::{AsBindGroup, ShaderRef};
 use ui::*;
 
-use crate::{occupable::ResourceType, resources::Resources, CustomMaterial};
+use crate::{occupable::ResourceType, resources::Resources};
 
 pub struct CustomUiPlugin;
 
@@ -24,10 +25,22 @@ pub struct ResourceBar {
     pub resource_type: ResourceType,
 }
 
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct ProgressBarMaterial {
+    #[uniform(0)]
+    progress: f32,
+}
+
+impl UiMaterial for ProgressBarMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/progress_bar/shader.wgsl".into()
+    }
+} 
+
 fn spawn_ui(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut custom_materials: ResMut<Assets<CustomMaterial>>,
+    mut custom_materials: ResMut<Assets<ProgressBarMaterial>>,
 ) {
     commands
         .spawn(NodeBundle {
@@ -59,7 +72,7 @@ fn spawn_ui(
                         height: Val::Px(32.0),
                         ..default()
                     },
-                    material: custom_materials.add(CustomMaterial { progress: 0. }),
+                    material: custom_materials.add(ProgressBarMaterial { progress: 0. }),
                     ..default()
                 },
                 UiImage::new(asset_server.load("ui/progress_bar/ProgressBar.png")),
@@ -105,8 +118,8 @@ fn update_resource_texts(resources: Res<Resources>, mut texts: Query<(&mut Text,
 
 fn update_resource_bars(
     resources: Res<Resources>,
-    mut bars: Query<(&Handle<CustomMaterial>, &ResourceBar)>,
-    mut materials: ResMut<Assets<CustomMaterial>>,
+    mut bars: Query<(&Handle<ProgressBarMaterial>, &ResourceBar)>,
+    mut materials: ResMut<Assets<ProgressBarMaterial>>,
 ) {
     for (handle, resource_text) in bars.iter_mut() {
         if let Some(amount) = resources.stored.get(&(resource_text.resource_type as i32)) {

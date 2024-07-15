@@ -11,6 +11,7 @@ bevy = { version = "0.14.0", features = ["dynamic_linking"] }
 rand = "0.8"
 num-traits = "0.2"
 bevy_mod_picking = "0.20"
+noisy_bevy = "0.7.0"
 
 [workspace]
 resolver = "2"

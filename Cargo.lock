@@ -2695,6 +2695,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "noisy_bevy"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a498a5310e40540a941aca31ef341a0b229e11b04fb359c9c023ac412e34465b"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3515,6 +3524,7 @@ dependencies = [
  "approx",
  "bevy",
  "bevy_mod_picking",
+ "noisy_bevy",
  "num-traits",
  "rand",
 ]

@@ -5,6 +5,8 @@ mod occupables {
     pub mod occupable_counter;
 }
 
+use background::BackgroundPlugin;
+use noisy_bevy::NoisyShaderPlugin;
 use occupable::*;
 use occupables::*;
 mod planet;
@@ -14,11 +16,10 @@ mod spritesheet_animator;
 mod resources;
 mod ui;
 mod villager_spawn;
+mod background;
 
 use bevy::{
-    prelude::*,
-    render::render_resource::{AsBindGroup, ShaderRef},
-    window::PresentMode,
+    prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::Material2dPlugin, window::PresentMode
 };
 use bevy_mod_picking::prelude::*;
 use planet::{NewPlanet, Planets};
@@ -48,9 +49,11 @@ fn main() {
             ResourcesPlugin,
             CustomUiPlugin,
             villager_spawn::VillagerSpawnPlugin,
-            planet::PlanetsPlugin
+            planet::PlanetsPlugin,
+            BackgroundPlugin
         ))
-        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<CustomMaterial>::default()))
+        .add_plugins(NoisyShaderPlugin)
+        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
@@ -112,15 +115,3 @@ fn setup(
         spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())
     }
 }
-
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-struct CustomMaterial {
-    #[uniform(0)]
-    progress: f32,
-}
-
-impl UiMaterial for CustomMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/progress_bar/shader.wgsl".into()
-    }
-} 
