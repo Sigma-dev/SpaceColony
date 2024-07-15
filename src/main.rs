@@ -21,7 +21,6 @@ use bevy::{
     window::PresentMode,
 };
 use bevy_mod_picking::prelude::*;
-use looping_float::LoopingFloat;
 use planet::{NewPlanet, Planets};
 use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
@@ -109,30 +108,6 @@ fn setup(
     }
     for villager_index in 0..2 {
         spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())
-        /*
-        commands.spawn((
-            SpriteBundle {
-                texture: asset_server.load("player/player.png"),
-                sprite: Sprite {
-                    anchor: bevy::sprite::Anchor::BottomCenter,
-                    ..default()
-                },
-                ..default()
-            },
-            spritesheet_animator::SpritesheetAnimator::new(
-                UVec2 { x: 16, y: 16 },
-                vec![vec![0.6; 2], vec![0.2; 2], vec![0.2; 4], vec![0.2; 2]],
-            ),
-            planet_sticker::PlanetSticker {
-                planet: main_planet,
-                position_degrees: LoopingFloat::new(45. + 45. * (villager_index as f32)),
-            },
-            planet_villager::PlanetVillager {
-                _name: format!("Villager{villager_index}"),
-            },
-            planet_villager::VillagerWandering::default(),
-        ));
-         */
     }
 }
 
