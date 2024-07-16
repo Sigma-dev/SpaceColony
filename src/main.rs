@@ -6,17 +6,20 @@ mod occupables {
 }
 
 use background::BackgroundPlugin;
+use mouse_position::{MousePosition, MousePositionPlugin};
 use noisy_bevy::NoisyShaderPlugin;
 use occupable::*;
 use occupables::*;
 mod planet;
 mod planet_sticker;
 mod planet_villager;
+mod planet_placing;
 mod spritesheet_animator;
 mod resources;
 mod ui;
 mod villager_spawn;
 mod background;
+mod mouse_position;
 
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::Material2dPlugin, window::PresentMode
@@ -43,6 +46,7 @@ fn main() {
         .add_plugins((
             planet_sticker::PlanetStickerPlugin,
             planet_villager::PlanetVillagerPlugin,
+            planet_placing::PlanetPlacingPlugin,
             occupable::OccupablePlugin,
             occupable_counter::OccupableCounterPlugin,
             spritesheet_animator::SpritesheetAnimatorPlugin,
@@ -50,7 +54,8 @@ fn main() {
             CustomUiPlugin,
             villager_spawn::VillagerSpawnPlugin,
             planet::PlanetsPlugin,
-            BackgroundPlugin
+            BackgroundPlugin,
+            MousePositionPlugin
         ))
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default()))

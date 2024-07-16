@@ -1,7 +1,5 @@
 use bevy::{app::*, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}, utils::*};
 
-pub struct BackgroundPlugin;
-
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct StarsMaterial {
 }
@@ -14,6 +12,8 @@ impl Material2d for StarsMaterial {
         "shaders/stars.wgsl".into()
     }
 } 
+
+pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
