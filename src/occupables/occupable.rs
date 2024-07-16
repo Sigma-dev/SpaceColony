@@ -80,7 +80,7 @@ impl NewOccupable for OccupableBundle {
                 ..default()
             },
             planet_sticker: planet_sticker::PlanetSticker {
-                planet,
+                planet: Some(planet),
                 position_degrees: LoopingFloat::new(position_degrees),
             },
             occupable: Occupable {

@@ -86,6 +86,7 @@ fn setup(
         .spawn(planet::PlanetBundle::new(100., meshes, materials))
         .id();
     planets.main = Some(main_planet);
+    planets.all.push(main_planet);
     for tree_index in 0..2 {
         commands.spawn((
             OccupableBundle::new(

@@ -18,6 +18,7 @@ pub struct PlanetBundle {
 #[derive(Resource, Default)]
 pub struct Planets {
     pub main: Option<Entity>,
+    pub all: Vec<Entity>
 }
 
 pub trait NewPlanet {

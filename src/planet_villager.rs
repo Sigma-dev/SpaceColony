@@ -182,7 +182,7 @@ pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, 
             vec![vec![0.6; 2], vec![0.2; 2], vec![0.2; 4], vec![0.2; 2]],
         ),
         planet_sticker::PlanetSticker {
-            planet: planet,
+            planet: Some(planet),
             position_degrees: LoopingFloat::new(position_degrees),
         },
         PlanetVillager {
