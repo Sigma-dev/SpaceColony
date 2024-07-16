@@ -88,34 +88,10 @@ fn setup(
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
     for tree_index in 0..2 {
-        commands.spawn((
-            OccupableBundle::new(
-                asset_server.load("environment/tree.png"),
-                main_planet,
-                tree_index as f32 * 180.,
-                OccupableType::Cutting,
-                ResourceType::Wood,
-                1
-            ),
-            On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
-                occupable.selected = true
-            }),
-        ));
+        spawn_tree(&mut commands, &asset_server, main_planet, tree_index as f32 * 180.);
     }
     for bush_index in 0..2 {
-        commands.spawn((
-            OccupableBundle::new(
-                asset_server.load("environment/bush.png"),
-                main_planet,
-                (bush_index + 1) as f32 * 33.,
-                OccupableType::Foraging,
-                ResourceType::Food,
-                2
-            ),
-            On::<Pointer<Click>>::target_component_mut::<occupable::Occupable>(|_, occupable| {
-                occupable.selected = true
-            }),
-        ));
+        spawn_bush(&mut commands, &asset_server, main_planet, (bush_index + 1) as f32 * 33.)
     }
     for villager_index in 0..2 {
         spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())

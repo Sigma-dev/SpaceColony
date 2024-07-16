@@ -184,6 +184,7 @@ pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, 
         planet_sticker::PlanetSticker {
             planet: Some(planet),
             position_degrees: LoopingFloat::new(position_degrees),
+            size_degrees: None
         },
         PlanetVillager {
             _name: format!("{}", name),

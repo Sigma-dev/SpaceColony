@@ -1,6 +1,8 @@
 use std::fmt;
 use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
 
+use num_traits::abs;
+
 
 #[derive(Debug, Copy, Clone, Default)]
 pub struct LoopingFloat<const MAX: u32> {
@@ -45,6 +47,10 @@ impl<const MAX: u32> LoopingFloat<MAX> {
         } else {
             wrapped_delta
         }
+    }
+
+    pub fn distance(&self, other: f32) -> f32 {
+        return abs(self.difference(other));
     }
 
     pub fn direction(&self, other: f32) -> i32 {

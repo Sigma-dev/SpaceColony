@@ -1,3 +1,5 @@
+use std::process::Child;
+
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -58,6 +60,7 @@ pub trait NewOccupable {
         occupable_type: OccupableType,
         produced_resource: ResourceType,
         max_workers: u32,
+        size_degrees: f32,
     ) -> Self;
 }
 
@@ -69,6 +72,7 @@ impl NewOccupable for OccupableBundle {
         occupable_type: OccupableType,
         produced_resource: ResourceType,
         max_workers: u32,
+        size_degrees: f32,
     ) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
@@ -82,6 +86,7 @@ impl NewOccupable for OccupableBundle {
             planet_sticker: planet_sticker::PlanetSticker {
                 planet: Some(planet),
                 position_degrees: LoopingFloat::new(position_degrees),
+                size_degrees: Some(size_degrees),
             },
             occupable: Occupable {
                 selected: false,
@@ -100,18 +105,18 @@ impl Plugin for OccupablePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, select_entity_system)
             .add_systems(Update, find_and_assign_villagers)
-            .add_systems(PostStartup, spawn_ui)
+            .add_systems(Update, spawn_ui)
+            .insert_resource(SelectedOccupable::default())
             .add_event::<OccupancyChange>();
     }
 }
 
 fn spawn_ui(
-    q: Query<Entity, With<Occupable>>,
+    q: Query<Entity, (With<Occupable>, Without<Children>)>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    commands.init_resource::<SelectedOccupable>();
     for e in q.iter() {
         let minus = spawn_button(
             &mut commands,
@@ -261,7 +266,7 @@ fn find_and_assign_villagers(
                             .remove::<VillagerWandering>()
                             .insert(VillagerWorking {
                                 current_occupable: ev.occupable,
-                                production_interval: 1.0
+                                production_interval: 1.0,
                             });
                         occupable.workers.push(villager_entity);
                         return;
@@ -294,4 +299,73 @@ fn select_entity_system(
             selected_occuppable.occupable = Some(event.target);
         }
     }
+}
+
+fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) {
+    commands.spawn((
+        occupable,
+        On::<Pointer<Click>>::target_component_mut::<Occupable>(|_, occupable| {
+            occupable.selected = true
+        }),
+    ));
+}
+
+pub fn spawn_tree(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    planet: Entity,
+    position_degrees: f32,
+) {
+    spawn_occupable(
+        commands,
+        OccupableBundle::new(
+            asset_server.load("environment/tree.png"),
+            planet,
+            position_degrees,
+            OccupableType::Cutting,
+            ResourceType::Wood,
+            1,
+            8.,
+        ),
+    );
+}
+
+pub fn spawn_bush(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    planet: Entity,
+    position_degrees: f32,
+) {
+    spawn_occupable(
+        commands,
+        OccupableBundle::new(
+            asset_server.load("environment/bush.png"),
+            planet,
+            position_degrees,
+            OccupableType::Foraging,
+            ResourceType::Food,
+            1,
+            8.,
+        ),
+    );
+}
+
+pub fn spawn_sawmill(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    planet: Entity,
+    position_degrees: f32,
+) {
+    spawn_occupable(
+        commands,
+        OccupableBundle::new(
+            asset_server.load("buildings/sawmill.png"),
+            planet,
+            position_degrees,
+            OccupableType::Interior,
+            ResourceType::Wood,
+            3,
+            16.,
+        ),
+    );
 }

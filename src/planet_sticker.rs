@@ -7,6 +7,26 @@ use crate::planet::Planet;
 pub struct PlanetSticker {
     pub planet: Option<Entity>,
     pub position_degrees: LoopingFloat<360>,
+    pub size_degrees: Option<f32>,
+}
+
+pub trait IsCollidingWith {
+    fn is_colliding_with(&self, other: &PlanetSticker) -> bool;
+}
+
+impl IsCollidingWith for PlanetSticker {
+    fn is_colliding_with(&self, other: &PlanetSticker) -> bool {
+        let Some(planet) = self.planet else { return false };
+        let Some(other_planet) = other.planet else { return false };
+        let Some(size) = self.size_degrees else { return false };
+        let Some(other_size) = other.size_degrees else { return false };
+        if planet != other_planet {
+                return false;
+        }
+        let dist = self.position_degrees.distance(other.position_degrees.to_f32());
+        let max = (size / 2.) + (other_size / 2.);
+        return dist < max
+    }
 }
 
 pub struct PlanetStickerPlugin;
