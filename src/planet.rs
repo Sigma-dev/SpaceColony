@@ -11,7 +11,7 @@ pub struct Planet {
 
 #[derive(Bundle)]
 pub struct PlanetBundle {
-    pub mesh: MaterialMesh2dBundle<ColorMaterial>,
+    pub mesh: MaterialMesh2dBundle<PlanetMaterial>,
     pub planet: Planet,
 }
 
@@ -25,7 +25,7 @@ pub trait NewPlanet {
     fn new(
         radius: f32,
         meshes: &mut ResMut<Assets<Mesh>>,
-        materials: ResMut<Assets<ColorMaterial>>,
+        planet_materials: ResMut<Assets<PlanetMaterial>>,
     ) -> Self;
 }
 
@@ -33,7 +33,7 @@ impl NewPlanet for PlanetBundle {
     fn new(
         radius: f32,
         meshes: &mut ResMut<Assets<Mesh>>,
-        mut materials: ResMut<Assets<ColorMaterial>>,
+        mut planet_materials: ResMut<Assets<PlanetMaterial>>,
     ) -> Self {
         Self {
             mesh: MaterialMesh2dBundle {
@@ -41,7 +41,7 @@ impl NewPlanet for PlanetBundle {
                     circle: Circle { radius },
                     resolution: 64,
                 })),
-                material: materials.add(Color::hsl(1., 1., 1.)),
+                material: planet_materials.add(PlanetMaterial { }),
                 transform: Transform::from_xyz(0.0, 0.0, 0.0),
                 ..default()
             },
@@ -57,3 +57,13 @@ impl Plugin for PlanetsPlugin {
         app.insert_resource(Planets::default());
     }
 }
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct PlanetMaterial {
+}
+
+impl Material2d for PlanetMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/planet.wgsl".into()
+    }
+} 

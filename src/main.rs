@@ -26,7 +26,7 @@ use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
 };
 use bevy_mod_picking::prelude::*;
-use planet::{NewPlanet, Planets};
+use planet::{NewPlanet, PlanetMaterial, Planets};
 use planet_villager::spawn_villager;
 use planet_water::WaterPlanetMaterial;
 use resources::ResourcesPlugin;
@@ -60,7 +60,7 @@ fn main() {
             MousePositionPlugin
         ))
         .add_plugins(NoisyShaderPlugin)
-        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<WaterPlanetMaterial>::default()))
+        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<WaterPlanetMaterial>::default(), Material2dPlugin::<PlanetMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
@@ -74,6 +74,7 @@ fn setup(
     materials: ResMut<Assets<ColorMaterial>>,
     mut planets: ResMut<Planets>,
     mut water_materials: ResMut<Assets<WaterPlanetMaterial>>,
+    mut planet_materials: ResMut<Assets<PlanetMaterial>>,
 ) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
@@ -86,7 +87,7 @@ fn setup(
     });
 
     let main_planet = commands
-        .spawn(planet::PlanetBundle::new(100., &mut meshes, materials))
+        .spawn(planet::PlanetBundle::new(100., &mut meshes, planet_materials))
         .id();
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
@@ -101,10 +102,10 @@ fn setup(
     }
     commands.spawn({
         (MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 50., y: 50. } })),
+            mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
             material: water_materials.add(planet_water::WaterPlanetMaterial { }),
             transform: Transform {
-                translation: Vec3 { x: -200., y: 50., z: 0. },
+                translation: Vec3 { x: 0., y: 0., z: 0. },
                 ..default()
             },
             ..default()
