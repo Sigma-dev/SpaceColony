@@ -1,7 +1,7 @@
 use bevy::{
     prelude::*,
-    render::mesh::CircleMeshBuilder,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    render::{mesh::CircleMeshBuilder, render_resource::{AsBindGroup, ShaderRef}},
+    sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle},
 };
 
 #[derive(Component)]
@@ -24,7 +24,7 @@ pub struct Planets {
 pub trait NewPlanet {
     fn new(
         radius: f32,
-        meshes: ResMut<Assets<Mesh>>,
+        meshes: &mut ResMut<Assets<Mesh>>,
         materials: ResMut<Assets<ColorMaterial>>,
     ) -> Self;
 }
@@ -32,7 +32,7 @@ pub trait NewPlanet {
 impl NewPlanet for PlanetBundle {
     fn new(
         radius: f32,
-        mut meshes: ResMut<Assets<Mesh>>,
+        meshes: &mut ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<ColorMaterial>>,
     ) -> Self {
         Self {

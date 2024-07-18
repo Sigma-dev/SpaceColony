@@ -20,13 +20,15 @@ mod ui;
 mod villager_spawn;
 mod background;
 mod mouse_position;
+mod planet_water;
 
 use bevy::{
-    prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::Material2dPlugin, window::PresentMode
+    prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
 };
 use bevy_mod_picking::prelude::*;
 use planet::{NewPlanet, Planets};
 use planet_villager::spawn_villager;
+use planet_water::WaterPlanetMaterial;
 use resources::ResourcesPlugin;
 use ui::CustomUiPlugin;
 
@@ -58,7 +60,7 @@ fn main() {
             MousePositionPlugin
         ))
         .add_plugins(NoisyShaderPlugin)
-        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default()))
+        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<WaterPlanetMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
@@ -68,9 +70,10 @@ fn main() {
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    meshes: ResMut<Assets<Mesh>>,
+    mut meshes: ResMut<Assets<Mesh>>,
     materials: ResMut<Assets<ColorMaterial>>,
-    mut planets: ResMut<Planets>
+    mut planets: ResMut<Planets>,
+    mut water_materials: ResMut<Assets<WaterPlanetMaterial>>,
 ) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
@@ -83,7 +86,7 @@ fn setup(
     });
 
     let main_planet = commands
-        .spawn(planet::PlanetBundle::new(100., meshes, materials))
+        .spawn(planet::PlanetBundle::new(100., &mut meshes, materials))
         .id();
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
@@ -96,4 +99,16 @@ fn setup(
     for villager_index in 0..2 {
         spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())
     }
+    commands.spawn({
+        (MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 50., y: 50. } })),
+            material: water_materials.add(planet_water::WaterPlanetMaterial { }),
+            transform: Transform {
+                translation: Vec3 { x: -200., y: 50., z: 0. },
+                ..default()
+            },
+            ..default()
+        },
+    )
+    });
 }

@@ -4,14 +4,14 @@ use bevy::{app::*, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}
 pub struct StarsMaterial {
 }
 
-#[derive(Component)]
-pub struct Background;
-
 impl Material2d for StarsMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/stars.wgsl".into()
     }
 } 
+
+#[derive(Component)]
+pub struct Background;
 
 pub struct BackgroundPlugin;
 
