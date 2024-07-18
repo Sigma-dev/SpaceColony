@@ -126,6 +126,7 @@ fn handle_working_villagers(
     for (mut worker, sticker, mut visibility, sprite, mut animator) in
         villager_query.iter_mut()
     {
+        *visibility = Visibility::Visible;
         if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_occupable) {
             let mut target = occupable_sticker.position_degrees;
             if occupable.occupable_type != OccupableType::Interior {
@@ -156,13 +157,10 @@ fn handle_working_villagers(
                     resources.stored.insert(index, current_value + 1 as i32);
                     worker.production_interval = 1.0;
                 }
+                if occupable.occupable_type == OccupableType::Interior {
+                    *visibility = Visibility::Hidden
+                }
             }
-
-            *visibility = if occupable.occupable_type == OccupableType::Interior {
-                Visibility::Hidden
-            } else {
-                Visibility::Visible
-            };
         }
     }
 }
