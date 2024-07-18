@@ -94,7 +94,7 @@ fn setup(
     for tree_index in 0..2 {
         spawn_tree(&mut commands, &asset_server, main_planet, tree_index as f32 * 180.);
     }
-    for bush_index in 0..2 {
+    for bush_index in 0..1 {
         spawn_bush(&mut commands, &asset_server, main_planet, (bush_index + 1) as f32 * 33.)
     }
     for villager_index in 0..2 {
@@ -105,7 +105,7 @@ fn setup(
             mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
             material: water_materials.add(planet_water::WaterPlanetMaterial { }),
             transform: Transform {
-                translation: Vec3 { x: 0., y: 0., z: 0. },
+                translation: Vec3 { x: 0., y: 0., z: -10. },
                 ..default()
             },
             ..default()

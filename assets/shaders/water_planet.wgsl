@@ -25,8 +25,12 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let w3 = generate_wave(angle, 20.0, 0.001, time, -0.5);
     let sum = w1 + w2 + w3;
     let len = (length(centered_uv));
-    if (len < 1. - sum) && (len > 0.99 - sum) {
-        return vec4<f32>(1., 1.0, 1.0, 1.0);
+    if len < 1. - sum {
+        if len > 0.99 - sum {
+            return vec4<f32>(1., 1.0, 1.0, 1.0);
+        } else {
+            return vec4<f32>(0.024, 0.025, 0.028, 1.);
+        }
     }
     return vec4<f32>(0., 1.0, 1.0, 0.0);
 }

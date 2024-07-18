@@ -1,7 +1,8 @@
 use bevy::{
-    prelude::*,
-    render::{mesh::CircleMeshBuilder, render_resource::{AsBindGroup, ShaderRef}},
-    sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle},
+    math::VectorSpace, prelude::*, reflect::Array, render::{
+        mesh::CircleMeshBuilder,
+        render_resource::{AsBindGroup, ShaderRef, ShaderType},
+    }, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}
 };
 
 #[derive(Component)]
@@ -18,7 +19,7 @@ pub struct PlanetBundle {
 #[derive(Resource, Default)]
 pub struct Planets {
     pub main: Option<Entity>,
-    pub all: Vec<Entity>
+    pub all: Vec<Entity>,
 }
 
 pub trait NewPlanet {
@@ -41,7 +42,16 @@ impl NewPlanet for PlanetBundle {
                     circle: Circle { radius },
                     resolution: 64,
                 })),
-                material: planet_materials.add(PlanetMaterial { }),
+                material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { hole_array: [
+                    Vec4::new(45., 90., 0., 0.),
+                    Vec4::new(135., 190., 0., 0.),
+                    Vec4::splat(0.),
+                    Vec4::splat(0.),
+                    Vec4::splat(0.),
+                    Vec4::splat(0.),
+                    Vec4::splat(0.),
+                    Vec4::splat(0.),
+                ] }}),
                 transform: Transform::from_xyz(0.0, 0.0, 0.0),
                 ..default()
             },
@@ -60,10 +70,29 @@ impl Plugin for PlanetsPlugin {
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct PlanetMaterial {
+    // Parameters to the planet shader bound to uniform 0.
+    #[uniform(0)]
+    settings: PlanetSettings,
+}
+
+#[derive(ShaderType, Debug, Clone)]
+struct PlanetSettings {
+    hole_array: [Vec4; 8],
 }
 
 impl Material2d for PlanetMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/planet.wgsl".into()
     }
-} 
+}
+
+fn update_planets(
+    mut bars: Query<(&Handle<PlanetMaterial>, &Planet)>,
+    mut materials: ResMut<Assets<PlanetMaterial>>,
+) {
+    for (handle, resource_text) in bars.iter_mut() {
+        if let Some(material) = materials.get_mut(handle) {
+
+        }
+    }
+}
