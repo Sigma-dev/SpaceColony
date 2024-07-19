@@ -6,6 +6,7 @@ mod occupables {
 }
 
 use background::BackgroundPlugin;
+use looping_float::LoopingFloat;
 use mouse_position::{MousePosition, MousePositionPlugin};
 use noisy_bevy::NoisyShaderPlugin;
 use occupable::*;
@@ -27,8 +28,9 @@ use bevy::{
 };
 use bevy_mod_picking::prelude::*;
 use planet::{NewPlanet, PlanetMaterial, Planets};
+use planet_sticker::PlanetSticker;
 use planet_villager::spawn_villager;
-use planet_water::WaterPlanetMaterial;
+use planet_water::{PlanetWater, WaterPlanetMaterial};
 use resources::ResourcesPlugin;
 use ui::CustomUiPlugin;
 
@@ -111,5 +113,13 @@ fn setup(
             ..default()
         },
     )
+    });
+    commands.spawn({(
+        PlanetSticker {
+            planet: Some(main_planet),
+            position_degrees: LoopingFloat::new(67.5),
+            size_degrees: Some(45.)
+        },
+        PlanetWater{},)
     });
 }

@@ -5,6 +5,8 @@ use bevy::{
     }, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}
 };
 
+use crate::{planet_sticker::PlanetSticker, planet_water::PlanetWater};
+
 #[derive(Component)]
 pub struct Planet {
     pub radius: f32,
@@ -42,7 +44,9 @@ impl NewPlanet for PlanetBundle {
                     circle: Circle { radius },
                     resolution: 64,
                 })),
-                material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { hole_array: [
+                material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { hole_array:
+                    [Vec4::splat(0.); 8]
+                /* [
                     Vec4::new(45., 90., 0., 0.),
                     Vec4::new(135., 190., 0., 0.),
                     Vec4::splat(0.),
@@ -51,7 +55,7 @@ impl NewPlanet for PlanetBundle {
                     Vec4::splat(0.),
                     Vec4::splat(0.),
                     Vec4::splat(0.),
-                ] }}),
+                ]*/ }}),
                 transform: Transform::from_xyz(0.0, 0.0, 0.0),
                 ..default()
             },
@@ -64,7 +68,8 @@ pub struct PlanetsPlugin;
 
 impl Plugin for PlanetsPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Planets::default());
+        app.insert_resource(Planets::default())
+        .add_systems(Update, update_water);
     }
 }
 
@@ -86,13 +91,24 @@ impl Material2d for PlanetMaterial {
     }
 }
 
-fn update_planets(
-    mut bars: Query<(&Handle<PlanetMaterial>, &Planet)>,
+fn update_water(
+    mut planets: Query<(Entity, &Handle<PlanetMaterial>), With<Planet>>,
+    waters_query: Query<&PlanetSticker, With<PlanetWater>>,
     mut materials: ResMut<Assets<PlanetMaterial>>,
 ) {
-    for (handle, resource_text) in bars.iter_mut() {
+    for (planet, handle) in planets.iter_mut() {
         if let Some(material) = materials.get_mut(handle) {
-
+            let mut waters: [Vec4; 8] = [Vec4::splat(0.); 8];
+            let mut index = 0;
+            for water_sticker in waters_query.iter() {
+                let Some(water_planet) = water_sticker.planet else { continue; };
+                let Some(size) = water_sticker.size_degrees else { continue; };
+                if water_planet != planet {continue;};
+                waters[index] = Vec4::new(water_sticker.position_degrees.to_f32() - size / 2., water_sticker.position_degrees.to_f32() + size / 2., 0., 0.);
+                index += 1;
+                if index == 8 {break;};
+            }
+            material.settings.hole_array = waters;
         }
     }
 }
