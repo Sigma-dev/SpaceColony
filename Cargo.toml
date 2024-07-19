@@ -12,6 +12,7 @@ rand = "0.8"
 num-traits = "0.2"
 bevy_mod_picking = "0.20"
 noisy_bevy = "0.7.0"
+iyes_perf_ui = "0.3.0"
 
 [workspace]
 resolver = "2"

@@ -6,6 +6,7 @@ mod occupables {
 }
 
 use background::BackgroundPlugin;
+use iyes_perf_ui::{entries::{PerfUiBundle, PerfUiCompleteBundle}, prelude::PerfUiEntryFPS, ui::root::PerfUiRoot, PerfUiPlugin};
 use looping_float::LoopingFloat;
 use mouse_position::{MousePosition, MousePositionPlugin};
 use noisy_bevy::NoisyShaderPlugin;
@@ -60,6 +61,7 @@ fn main() {
             MousePositionPlugin
         ))
         .add_plugins(NoisyShaderPlugin)
+        .add_plugins((bevy::diagnostic::FrameTimeDiagnosticsPlugin, PerfUiPlugin))
         .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<PlanetMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
@@ -75,6 +77,8 @@ fn setup(
     mut planets: ResMut<Planets>,
     mut planet_materials: ResMut<Assets<PlanetMaterial>>,
 ) {
+    commands.spawn((PerfUiRoot::default(),
+    PerfUiEntryFPS::default(),));
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
             far: 1000.,
