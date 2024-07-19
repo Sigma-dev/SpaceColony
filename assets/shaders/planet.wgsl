@@ -20,6 +20,26 @@ fn get_hole(index: u32) -> vec2<f32> {
     return properties.hole_array[index].xy;
 }
 
+fn generate_wave(angle: f32, frequency: f32, amplitude: f32, time: f32, time_mult: f32) -> f32 {
+    let x = angle + (time * time_mult);
+    return pos_sin(x * frequency) * amplitude;
+}
+
+fn handle_water(len: f32, angle: f32, time: f32) -> vec4<f32> {
+    let w1 = generate_wave(angle, 50.0, 0.01, time, 0.5);
+    let w2 = generate_wave(angle, 40.0, 0.005, time, -0.5);
+    let w3 = generate_wave(angle, 20.0, 0.001, time, -0.5);
+    let sum = w1 + w2 + w3;
+    if len < 1. - sum {
+        if len > 0.99 - sum {
+            return vec4<f32>(1., 1.0, 1.0, 1.0);
+        } else {
+            return vec4<f32>(0.024, 0.025, 0.028, 1.);
+        }
+    }
+    return vec4<f32>(0., 1.0, 1.0, 0.0);
+}
+
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let centered_uv = in.uv * 2. - vec2<f32>(1., 1.);
@@ -47,7 +67,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
             let elevation = generate_elevation(angle_deg, 1., 0.01);
             let depth = (log + elevation) / 2.;
             if (len > 0.97 - depth - (depth_mult / 250.)) {
-                return vec4<f32>(0.);
+                //return vec4<f32>(0.);
+                return handle_water(len, angle, time);
             }
         }
     }

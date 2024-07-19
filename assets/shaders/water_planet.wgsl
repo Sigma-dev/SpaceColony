@@ -12,14 +12,8 @@ fn generate_wave(angle: f32, frequency: f32, amplitude: f32, time: f32, time_mul
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let centered_uv = in.uv * 2. - vec2<f32>(1., 1.);
-    //let sinus = sin((in.uv.x + in.uv.y) * 100.) / 100.;
     let angle = atan2(centered_uv.y, centered_uv.x);
     let time = globals.time / 3.; 
-    //let sin1 = pos_sin((angle + time) * 50. ) / 50.;
-    //let sin2 = pos_sin((angle + (time / 2.)) * 25.) / 40.;
-    //let sin3 = pos_sin((angle + (time / 10.)) * 10.) / 20.;
-    //let sin4 = pos_sin((angle + (time * 10)) * 215) / 100.;
-    //let sum = sin1 + sin2 + sin3;
     let w1 = generate_wave(angle, 50.0, 0.01, time, 0.5);
     let w2 = generate_wave(angle, 40.0, 0.005, time, -0.5);
     let w3 = generate_wave(angle, 20.0, 0.001, time, -0.5);

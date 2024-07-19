@@ -102,6 +102,7 @@ fn setup(
     for villager_index in 0..2 {
         spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())
     }
+    /* 
     commands.spawn({
         (MaterialMesh2dBundle {
             mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
@@ -114,6 +115,7 @@ fn setup(
         },
     )
     });
+    */
     commands.spawn({(
         PlanetSticker {
             planet: Some(main_planet),
