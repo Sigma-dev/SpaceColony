@@ -5,7 +5,11 @@ use bevy::{
     }, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}
 };
 
-use crate::{planet_sticker::PlanetSticker, planet_water::PlanetWater};
+use crate::planet_sticker::PlanetSticker;
+
+#[derive(Component, PartialEq)]
+pub struct PlanetWater {
+}
 
 #[derive(Component)]
 pub struct Planet {
@@ -44,18 +48,9 @@ impl NewPlanet for PlanetBundle {
                     circle: Circle { radius },
                     resolution: 64,
                 })),
-                material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { hole_array:
-                    [Vec4::splat(0.); 8]
-                /* [
-                    Vec4::new(45., 90., 0., 0.),
-                    Vec4::new(135., 190., 0., 0.),
-                    Vec4::splat(0.),
-                    Vec4::splat(0.),
-                    Vec4::splat(0.),
-                    Vec4::splat(0.),
-                    Vec4::splat(0.),
-                    Vec4::splat(0.),
-                ]*/ }}),
+                material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { 
+                    hole_array: [Vec4::splat(0.); 8]
+                }}),
                 transform: Transform::from_xyz(0.0, 0.0, 0.0),
                 ..default()
             },
@@ -75,7 +70,6 @@ impl Plugin for PlanetsPlugin {
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct PlanetMaterial {
-    // Parameters to the planet shader bound to uniform 0.
     #[uniform(0)]
     settings: PlanetSettings,
 }

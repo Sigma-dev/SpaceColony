@@ -21,16 +21,14 @@ mod ui;
 mod villager_spawn;
 mod background;
 mod mouse_position;
-mod planet_water;
 
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
 };
 use bevy_mod_picking::prelude::*;
-use planet::{NewPlanet, PlanetMaterial, Planets};
+use planet::{NewPlanet, PlanetMaterial, PlanetWater, Planets};
 use planet_sticker::PlanetSticker;
 use planet_villager::spawn_villager;
-use planet_water::{PlanetWater, WaterPlanetMaterial};
 use resources::ResourcesPlugin;
 use ui::CustomUiPlugin;
 
@@ -62,7 +60,7 @@ fn main() {
             MousePositionPlugin
         ))
         .add_plugins(NoisyShaderPlugin)
-        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<WaterPlanetMaterial>::default(), Material2dPlugin::<PlanetMaterial>::default()))
+        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<PlanetMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
@@ -75,7 +73,6 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     materials: ResMut<Assets<ColorMaterial>>,
     mut planets: ResMut<Planets>,
-    mut water_materials: ResMut<Assets<WaterPlanetMaterial>>,
     mut planet_materials: ResMut<Assets<PlanetMaterial>>,
 ) {
     commands.spawn(Camera2dBundle {
@@ -102,20 +99,6 @@ fn setup(
     for villager_index in 0..2 {
         spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())
     }
-    /* 
-    commands.spawn({
-        (MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
-            material: water_materials.add(planet_water::WaterPlanetMaterial { }),
-            transform: Transform {
-                translation: Vec3 { x: 0., y: 0., z: -10. },
-                ..default()
-            },
-            ..default()
-        },
-    )
-    });
-    */
     commands.spawn({(
         PlanetSticker {
             planet: Some(main_planet),
