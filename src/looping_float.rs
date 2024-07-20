@@ -59,6 +59,23 @@ impl<const MAX: u32> LoopingFloat<MAX> {
         if diff < 0. {return -1;}
         return 0
     }
+
+    pub fn is_in_between(&self, v: f32, end: f32, forward: bool) -> bool {
+        if (forward) {
+            if self.value < end {
+                return v > self.value && v < end;
+            } else {
+                return !(v < self.value && v > end);
+            }
+        }
+        else {
+            if self.value > end {
+                return v > self.value && v < end;
+            } else {
+                return !(v < self.value && v > end);
+            }
+        }
+    }
 }
 
 // Operations with f32

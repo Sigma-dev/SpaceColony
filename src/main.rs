@@ -100,8 +100,8 @@ fn setup(
     for bush_index in 0..1 {
         spawn_bush(&mut commands, &asset_server, main_planet, (bush_index + 1) as f32 * 33.)
     }
-    for villager_index in 0..2 {
-        spawn_villager(&mut commands, &asset_server, main_planet, 45. + 45. * (villager_index as f32), villager_index.to_string())
+    for villager_index in 0..1 {
+        spawn_villager(&mut commands, &asset_server, main_planet, 30. + 45. * (villager_index as f32), villager_index.to_string())
     }
     commands.spawn({(
         PlanetSticker {
@@ -111,4 +111,15 @@ fn setup(
         },
         PlanetWater{},)
     });
+    /*
+    commands.spawn({(
+        PlanetSticker {
+            planet: Some(main_planet),
+            position_degrees: LoopingFloat::new(200.),
+            size_degrees: Some(45.)
+        },
+        PlanetWater{},)
+    });
+    */
+     
 }
