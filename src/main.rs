@@ -111,7 +111,7 @@ fn setup(
         },
         PlanetWater{},)
     });
-    /*
+    
     commands.spawn({(
         PlanetSticker {
             planet: Some(main_planet),
@@ -120,6 +120,6 @@ fn setup(
         },
         PlanetWater{},)
     });
-    */
+
      
 }

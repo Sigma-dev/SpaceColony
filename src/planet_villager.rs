@@ -158,12 +158,6 @@ fn is_obstructing(
     return false;
 }
 
-fn check_in_between(start: f32, end: f32, v: f32, forward: bool) {
-    if (forward) {
-
-    }
-}
-
 
 fn walk_towards(
     animator: &mut spritesheet_animator::SpritesheetAnimator,
@@ -178,7 +172,6 @@ fn walk_towards(
     if seperating.abs() < 0.1 {
         return true;
     }
-    //let dir = sticker.position_degrees.direction(destination.to_f32()) as f32;
     let dir_opt = get_walk_dir(&sticker, water_query, destination);
     let Some(dir) = dir_opt else {return false;};
     sticker.position_degrees += dir as f32 * speed * elapsed_seconds;

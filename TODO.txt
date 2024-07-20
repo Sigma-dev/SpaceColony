@@ -1,0 +1,15 @@
+Space_colony features
+
+Spawning stuff in non obstructed places (Precursor to Resource Spawning):
+Spawn water first then spawn trees by trying random spots x amount of times;
+
+Resource spawning:
+Instead of static resources, go the forager way ?
+Adds more micromanagement unless new assignement system (assign to building then he cuts the tress around it automatically ?)
+For the spawning: runs for each planet, find a random free spot and spawns it
+
+Fix water:
+Doesn't work between 270 and 360
+
+Fix pathing:
+shouldn't be able to start path to inecassible stuff
