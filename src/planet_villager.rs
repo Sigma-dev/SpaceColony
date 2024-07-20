@@ -96,8 +96,8 @@ fn handle_wandering_villagers(
     }
 }
 
-fn get_walk_dir(
-    mut villager_sticker: &Mut<PlanetSticker>,
+pub fn get_walk_dir(
+    mut villager_sticker: &PlanetSticker,
     water_query: &Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     destination: LoopingFloat<360>
 ) -> Option<i32> {

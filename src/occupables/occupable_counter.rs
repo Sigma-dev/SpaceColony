@@ -1,4 +1,4 @@
-use crate::{occupables::*, planet_sticker::{self, PlanetSticker}, planet_villager::{PlanetVillager, VillagerWandering, VillagerWorking}};
+use crate::{occupables::*, planet::PlanetWater, planet_sticker::{self, PlanetSticker}, planet_villager::{self, PlanetVillager, VillagerWandering, VillagerWorking}, Occupable};
 use bevy::prelude::*;
 use occupable::OccupancyChange;
 
@@ -43,7 +43,8 @@ fn handle_counters(
     occupables_query: Query<(Entity, &occupable::Occupable, &planet_sticker::PlanetSticker)>,
     mut visibility_query: Query<&mut Visibility, Without<OccupableCounter>>,
     selected_occupable: Res<occupable::SelectedOccupable>,
-    villager_query: Query<&PlanetSticker, With<VillagerWandering>>
+    villager_query: Query<&PlanetSticker, With<VillagerWandering>>,
+    water_query: Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
 ) {
     for (parent, counter, visibility) in counters_query.iter_mut() {
         if let Ok((occupable_entity, occupable, occupable_sticker)) = occupables_query.get(parent.get()) {
@@ -62,7 +63,9 @@ fn handle_counters(
                 for villager_sticker in villager_query.iter() {
                     let mut found = false;
                     if villager_sticker.planet == occupable_sticker.planet {
-                        found = true
+                        if planet_villager::get_walk_dir(&villager_sticker, &water_query, occupable_sticker.position_degrees).is_some() {
+                            found = true
+                        }
                     }
                     if !found { 
                         *plus_vis = Visibility::Hidden; 
