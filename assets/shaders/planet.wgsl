@@ -46,12 +46,14 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let angle = atan2(centered_uv.y, centered_uv.x);
     let time = globals.time / 3.; 
     let len = (length(centered_uv));
-    let angle_deg = (angle * 180/pi) + 90;
-
+    var angle_deg = ((angle * 180) / pi) + 90;
+    if angle_deg < 0 {
+        angle_deg = angle_deg + 360.;
+    }
     if (len >= 1.0) {
         return vec4<f32>(0.0);
     }
-
+    
     for (var i: u32 = 0u; i < array_size; i = i + 1u) {
         let hole: vec2<f32> = get_hole(i);
         if (angle_deg > hole.x && angle_deg < hole.y) {

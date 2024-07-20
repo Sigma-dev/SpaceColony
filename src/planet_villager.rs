@@ -123,7 +123,6 @@ fn is_path_free(
             return false;
         }
     }
-    println!("free");
     return true;
 }
 
@@ -137,7 +136,6 @@ fn is_obstructing(
     let Some(water_size) = water.size_degrees else { return false; };
     let water_start = water.position_degrees - water_size / 2.;
     let water_end = water.position_degrees  + water_size / 2.;
-    println!("{} {} {} {} {}", start, water_start.to_f32(), water_end.to_f32(), end, dir_bool);
     if (start.to_f32() > water_start.to_f32() && start.to_f32() < water_end.to_f32()) || (end > water_start.to_f32() && end < water_end.to_f32()) {
         return true;
     }
@@ -150,7 +148,6 @@ fn is_obstructing(
         a = LoopingFloat::<360>::new(end).is_in_between(water_start.to_f32(), start.to_f32(), true);
         b = LoopingFloat::<360>::new(end).is_in_between(water_end.to_f32(), start.to_f32(), true);
     }
-    println!("a: {}, b: {}", a, b);
     if a || b {
         return true;
     }

@@ -121,5 +121,15 @@ fn setup(
         PlanetWater{},)
     });
 
+    commands.spawn({(
+        PlanetSticker {
+            planet: Some(main_planet),
+            position_degrees: LoopingFloat::new(270.),
+            size_degrees: Some(45.)
+        },
+        PlanetWater{},)
+    });
+
+
      
 }
