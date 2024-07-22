@@ -22,7 +22,7 @@ pub struct NaturalResourcePlugin;
 impl Plugin for NaturalResourcePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, handle_natural_resources)
-        .add_systems(Update,handle_spawning_resources.run_if(on_timer(Duration::from_secs_f32(0.))));
+        .add_systems(Update,handle_spawning_resources.run_if(on_timer(Duration::from_secs_f32(5.))));
     }
 }
 
@@ -63,7 +63,7 @@ fn handle_spawning_resources(
         }
         if found { continue; };
         match biome {
-            Biome::Water => {},
+            Biome::Water => spawn_fish(&mut commands, &asset_server, planet_entity, pos),
             Biome::Swamp => spawn_bush(&mut commands, &asset_server, planet_entity, pos),
             Biome::Ground => spawn_tree(&mut commands, &asset_server, planet_entity, pos),
         }
@@ -108,6 +108,7 @@ pub fn spawn_tree(
             ResourceType::Wood,
             1,
             8.,
+            bevy::sprite::Anchor::BottomCenter
         ),
         ResourceType::Wood,
         20,
@@ -130,6 +131,7 @@ pub fn spawn_bush(
             ResourceType::Food,
             1,
             8.,
+            bevy::sprite::Anchor::BottomCenter
         ),
         ResourceType::Food,
         20,
@@ -145,13 +147,14 @@ pub fn spawn_fish(
     spawn_natural_resource(
         commands,
         OccupableBundle::new(
-            asset_server.load("environment/bush.png"),
+            asset_server.load("environment/fish.png"),
             planet,
             position_degrees,
             OccupableType::Fishing,
             ResourceType::Food,
             1,
             8.,
+            bevy::sprite::Anchor::Custom(Vec2::new(0., 1.))
         ),
         ResourceType::Food,
         20,

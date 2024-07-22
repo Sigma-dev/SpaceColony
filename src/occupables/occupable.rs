@@ -1,6 +1,6 @@
 use std::process::Child;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 use bevy_mod_picking::prelude::*;
 
 use crate::{
@@ -61,6 +61,7 @@ pub trait NewOccupable {
         produced_resource: ResourceType,
         max_workers: u32,
         size_degrees: f32,
+        offset: Anchor,
     ) -> Self;
 }
 
@@ -73,11 +74,12 @@ impl NewOccupable for OccupableBundle {
         produced_resource: ResourceType,
         max_workers: u32,
         size_degrees: f32,
+        anchor: Anchor,
     ) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 sprite: Sprite {
-                    anchor: bevy::sprite::Anchor::BottomCenter,
+                    anchor,
                     ..default()
                 },
                 texture,
@@ -375,6 +377,7 @@ pub fn spawn_building(
             ResourceType::Wood,
             3,
             16.,
+            Anchor::BottomCenter
         ),
         info.range,
         info.exploited_resource

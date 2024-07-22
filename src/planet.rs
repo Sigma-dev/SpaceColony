@@ -49,7 +49,7 @@ impl NewPlanet for PlanetBundle {
                 material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { 
                     hole_array: [Vec4::splat(0.); 8]
                 }}),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                transform: Transform::from_xyz(0.0, 0.0, -10.0),
                 ..default()
             },
             planet: Planet { radius: radius },
