@@ -5,7 +5,7 @@ use crate::occupable::{self, Occupable, OccupableType};
 use crate::planet::{self, Planet, PlanetWater};
 use crate::planet_sticker::{self, PlanetSticker};
 use crate::resources::Resources;
-use crate::{spritesheet_animator, NaturalResource};
+use crate::{spritesheet_animator, natural_resource::NaturalResource};
 use rand::Rng;
 
 pub enum PlanetVillagerAnimationState {
@@ -190,7 +190,9 @@ fn walk_towards(
 }
 
 fn handle_working_villagers(
+    mut commands: Commands,
     mut villager_query: Query<(
+        Entity,
         &mut VillagerWorking,
         &mut PlanetSticker,
         &mut Visibility,
@@ -199,11 +201,11 @@ fn handle_working_villagers(
     )>,
     water_query: Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     occupable_query: Query<(&Occupable, &PlanetSticker), Without<VillagerWorking>>,
-    natural_resource_query: Query<&NaturalResource>,
+    mut natural_resource_query: Query<&mut NaturalResource>,
     time: Res<Time>,
     mut resources: ResMut<Resources>
 ) {
-    for (mut worker, sticker, mut visibility, sprite, mut animator) in
+    for (worker_entity, mut worker, sticker, mut visibility, sprite, mut animator) in
         villager_query.iter_mut()
     {
         let Some(planet_entity) = sticker.planet else {return;};
@@ -232,11 +234,12 @@ fn handle_working_villagers(
                     OccupableType::Interior => PlanetVillagerAnimationState::Idle
                 };
                 animator.current_animation_index = anim as u32;
-                if let Ok(natural_resource) = natural_resource_query.get(worker.current_work) {
+                if let Ok(mut natural_resource) = natural_resource_query.get_mut(worker.current_work) {
                     worker.production_interval -= time.delta_seconds();
                     if worker.production_interval <= 0.0 {
                         let index = natural_resource.produced_resource as i32;
                         let current_value = resources.stored.get(&index).copied().unwrap_or(0);
+                        natural_resource.amount_remaining -= 1;
                         resources.stored.insert(index, current_value + 1 as i32);
                         worker.production_interval = 1.0;
                     }
@@ -244,6 +247,15 @@ fn handle_working_villagers(
                 if occupable.occupable_type == OccupableType::Interior {
                     *visibility = Visibility::Hidden
                 }
+            }
+        } else {
+            if (worker.current_work == worker.current_occupable) {
+                commands
+                            .entity(worker_entity)
+                            .remove::<VillagerWorking>()
+                            .insert(VillagerWandering::default());
+            } else {
+                worker.current_work = worker.current_occupable;
             }
         }
     }

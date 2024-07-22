@@ -20,10 +20,7 @@ Black and white adjustments:
 There should be a way to easily adjust the white and black tints.
 Plan A:
 Make every asset as pure black, then a screen sized shader swaps out the colors.
---
 
-Structure auto exploit:
-It should check if it is reachable before assigning someone to it.
 --
 
 Resources should be breakable:

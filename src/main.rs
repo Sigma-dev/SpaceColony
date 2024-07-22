@@ -10,6 +10,7 @@ use blinking_sprite::BlinkingSpritePlugin;
 use iyes_perf_ui::{entries::{PerfUiBundle, PerfUiCompleteBundle}, prelude::PerfUiEntryFPS, ui::root::PerfUiRoot, PerfUiPlugin};
 use looping_float::LoopingFloat;
 use mouse_position::{MousePosition, MousePositionPlugin};
+use natural_resource::{spawn_bush, spawn_tree, NaturalResourcePlugin};
 use noisy_bevy::NoisyShaderPlugin;
 use occupable::*;
 use occupables::*;
@@ -24,6 +25,7 @@ mod villager_spawn;
 mod background;
 mod mouse_position;
 mod blinking_sprite;
+mod natural_resource;
 
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
@@ -62,7 +64,8 @@ fn main() {
             planet::PlanetsPlugin,
             BackgroundPlugin,
             MousePositionPlugin,
-            BlinkingSpritePlugin
+            BlinkingSpritePlugin,
+            NaturalResourcePlugin,
         ))
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((bevy::diagnostic::FrameTimeDiagnosticsPlugin, PerfUiPlugin))

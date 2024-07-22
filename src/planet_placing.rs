@@ -1,8 +1,8 @@
 use approx::AbsDiffEq;
 use bevy::{
-    input::mouse, math::VectorSpace, prelude::*, render::{mesh::CircleMeshBuilder, render_resource::{AsBindGroup, ShaderRef, ShaderType}}, scene::ron::de, sprite::{Anchor, Material2d, MaterialMesh2dBundle, Mesh2dHandle}
+    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{Anchor, Material2d, MaterialMesh2dBundle, Mesh2dHandle}
 };
-use crate::{blinking_sprite::BlinkingSprite, looping_float::{self, LoopingFloat}, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_building, NaturalResource, OccupableType, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, looping_float::{LoopingFloat}, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_building, natural_resource::NaturalResource, ResourceType};
 
 #[derive(Component)]
 pub struct PlanetPlacingGhost;
@@ -118,7 +118,6 @@ fn blink_resource_in_range(
         let info = building_type.get_building_info();
         let arc_distance = resource_sticker.position_degrees.arc_distance(ghost.position_degrees.to_f32(), planet.radius);
         if arc_distance <= info.range && natural_resource.produced_resource == info.exploited_resource {
-            println!("{}", arc_distance);
             blinking.enabled = true;
         }
     }

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources
+    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, natural_resource::NaturalResource, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources
 };
 
 #[derive(Resource, Default)]
@@ -36,11 +36,6 @@ pub struct Occupable {
 pub struct Automator {
     pub exploited_resource: ResourceType,
     pub range: f32
-}
-
-#[derive(Component, PartialEq)]
-pub struct NaturalResource {
-    pub produced_resource: ResourceType,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -341,7 +336,7 @@ fn select_entity_system(
     }
 }
 
-fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) -> Entity {
+pub fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) -> Entity {
     return commands.spawn((
         occupable,
         On::<Pointer<Click>>::target_component_mut::<Occupable>(|_, occupable| {
@@ -351,62 +346,10 @@ fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) -> Entit
     )).id();
 }
 
-fn spawn_natural_resource(commands: &mut Commands, occupable_bundle: OccupableBundle, produced: ResourceType) {
-    let occupable = spawn_occupable(commands, occupable_bundle);
-    commands.entity(occupable).insert(
-        NaturalResource { produced_resource: produced }
-    );
-    commands.entity(occupable).insert(
-        BlinkingSprite { enabled: false }
-    );
-}
-
 fn spawn_automator(commands: &mut Commands, occupable_bundle: OccupableBundle, range: f32, exploited_resource: ResourceType) {
     let occupable = spawn_occupable(commands, occupable_bundle);
     commands.entity(occupable).insert(
         Automator { exploited_resource, range }
-    );
-}
-
-pub fn spawn_tree(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
-    planet: Entity,
-    position_degrees: f32,
-) {
-    spawn_natural_resource(
-        commands,
-        OccupableBundle::new(
-            asset_server.load("environment/tree.png"),
-            planet,
-            position_degrees,
-            OccupableType::Cutting,
-            ResourceType::Wood,
-            1,
-            8.,
-        ),
-        ResourceType::Wood,
-    );
-}
-
-pub fn spawn_bush(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
-    planet: Entity,
-    position_degrees: f32,
-) {
-    spawn_natural_resource(
-        commands,
-        OccupableBundle::new(
-            asset_server.load("environment/bush.png"),
-            planet,
-            position_degrees,
-            OccupableType::Foraging,
-            ResourceType::Food,
-            1,
-            8.,
-        ),
-        ResourceType::Food
     );
 }
 
