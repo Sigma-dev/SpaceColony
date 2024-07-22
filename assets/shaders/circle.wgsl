@@ -18,7 +18,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if angle_deg < 0 {
         angle_deg = angle_deg + 360.;
     }
-    if (len >= 1.0 || len <= 0.99) {
+    let target_len = (properties.size / 100.);
+    if (len >= target_len || len <= target_len - 0.01) {
         return vec4<f32>(0.0);
     }
     return vec4<f32>(1.);

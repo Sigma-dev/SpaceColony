@@ -4,12 +4,7 @@ use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    button_value,
-    looping_float::LoopingFloat,
-    occupable_counter::{self, OccupableCounter},
-    planet_sticker::{self, PlanetSticker},
-    planet_villager::*,
-    resources,
+    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources
 };
 
 #[derive(Resource, Default)]
@@ -358,6 +353,9 @@ fn spawn_natural_resource(commands: &mut Commands, occupable_bundle: OccupableBu
     let occupable = spawn_occupable(commands, occupable_bundle);
     commands.entity(occupable).insert(
         NaturalResource { produced_resource: produced }
+    );
+    commands.entity(occupable).insert(
+        BlinkingSprite { enabled: false }
     );
 }
 

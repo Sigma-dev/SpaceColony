@@ -2,14 +2,14 @@ use approx::AbsDiffEq;
 use bevy::{
     input::mouse, math::VectorSpace, prelude::*, render::{mesh::CircleMeshBuilder, render_resource::{AsBindGroup, ShaderRef, ShaderType}}, scene::ron::de, sprite::{Anchor, Material2d, MaterialMesh2dBundle, Mesh2dHandle}
 };
-use crate::{looping_float::{self, LoopingFloat}, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_sawmill, OccupableType};
+use crate::{blinking_sprite::BlinkingSprite, looping_float::{self, LoopingFloat}, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_sawmill, NaturalResource, OccupableType, ResourceType};
 
 #[derive(Component)]
 pub struct PlanetPlacingGhost;
 
 #[derive(PartialEq)]
 pub enum BuildingType {
-    Sawmill
+    Sawmill = 32
 }
 
 #[derive(Resource, Default)]
@@ -40,7 +40,7 @@ impl Plugin for PlanetPlacingPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlanetPlacing::default())
         .add_systems(Startup, spawn_ghost)
-        .add_systems(Update, handle_ghost);
+        .add_systems(Update, (handle_ghost, blink_resource_in_range));
     }
 }
 
@@ -70,6 +70,36 @@ fn spawn_ghost(
     commands.insert_resource(PlanetPlacing { building_type: None })
 }
 
+fn hand_circle(
+    circle_query: Query<(&Handle<CircleMaterial>, &Parent)>,
+    planet_placing: Res<PlanetPlacing>,
+    mut circle_materials: ResMut<Assets<CircleMaterial>>,
+) {
+    for (handle, parent) in circle_query.iter() {
+        if let Some(material) = circle_materials.get_mut(handle) {
+            if (planet_placing.building_type == Some(BuildingType::Sawmill)) {
+                material.settings.size = 32.;
+            }
+        }
+    }
+}
+
+fn blink_resource_in_range(
+    ghost_query: Query<&PlanetSticker, With<PlanetPlacingGhost>>,
+    mut natural_resource_query: Query<(&NaturalResource, &PlanetSticker, &mut BlinkingSprite), Without<PlanetPlacingGhost>>
+) {
+    let ghost = ghost_query.single();
+    for (natural_resource, resource_sticker, mut blinking) in natural_resource_query.iter_mut() {
+        if (ghost.planet.is_none()) { blinking.enabled = false; continue; };
+        if (resource_sticker.position_degrees.distance(ghost.position_degrees.to_f32()) <= 32. && natural_resource.produced_resource == ResourceType::Wood) {
+            blinking.enabled = true;
+        }
+        else {
+            blinking.enabled = false;
+        }
+    }
+}
+
 fn handle_ghost(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
@@ -80,7 +110,7 @@ fn handle_ghost(
     mut planet_placing: ResMut<PlanetPlacing>,
     mut ghost_query: Query<(&mut Transform, &mut Handle<Image>, &mut Visibility, &mut PlanetSticker, &mut Sprite), With<PlanetPlacingGhost>>,
     planets_query: Query<(Entity, &Planet, &GlobalTransform)>,
-    stickers_query: Query<&PlanetSticker, Without<PlanetPlacingGhost>>
+    stickers_query: Query<&PlanetSticker, Without<PlanetPlacingGhost>>,
 ) {
     let (mut ghost_transform, mut ghost_image, mut ghost_visibility, mut ghost_sticker, mut ghost_sprite) = ghost_query.single_mut();
 
@@ -107,6 +137,7 @@ fn handle_ghost(
                 if mouse_buttons.just_pressed(MouseButton::Left) {
                     spawn_sawmill(&mut commands, &asset_server, planet_entity, angle);
                     planet_placing.building_type = None;
+                    ghost_sticker.planet = None;
                 }
             }
         } else {
