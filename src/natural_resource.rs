@@ -22,7 +22,7 @@ pub struct NaturalResourcePlugin;
 impl Plugin for NaturalResourcePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, handle_natural_resources)
-        .add_systems(Update,handle_spawning_resources.run_if(on_timer(Duration::from_secs_f32(5.))));
+        .add_systems(Update,handle_spawning_resources.run_if(on_timer(Duration::from_secs_f32(500.))));
     }
 }
 

@@ -22,10 +22,15 @@ impl IsCollidingWith for PlanetSticker {
         let Some(planet) = self.planet else { return false };
         let Some(other_planet) = other.planet else { return false };
         let Some(other_size) = other.size_degrees else { return false };
+        let Some(size) = self.size_degrees else { return false };
         if planet != other_planet {
                 return false;
         }
-        return self.is_colliding_with_pos(other.position_degrees.to_f32(), other_size)
+        if (size > other_size) {
+            return self.is_colliding_with_pos(other.position_degrees.to_f32(), other_size)
+        } else {
+            return other.is_colliding_with_pos(self.position_degrees.to_f32(), size)
+        }
     }
 
     fn is_colliding_with_pos(&self, other_pos: f32, other_size: f32) -> bool {

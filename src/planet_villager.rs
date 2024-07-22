@@ -270,6 +270,10 @@ pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, 
                 anchor: bevy::sprite::Anchor::BottomCenter,
                 ..default()
             },
+            transform: Transform {
+                translation: Vec3{ x: 0., y: 0., z: 10.},
+                ..default()
+            },
             ..default()
         },
         spritesheet_animator::SpritesheetAnimator::new(

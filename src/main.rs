@@ -104,6 +104,7 @@ fn setup(
         .id();
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
+    /* 
     for tree_index in 0..1 {
         spawn_tree(&mut commands, &asset_server, main_planet, tree_index as f32 * 180.);
     }
@@ -113,6 +114,7 @@ fn setup(
     for villager_index in 0..1 {
         spawn_villager(&mut commands, &asset_server, main_planet, 30. + 45. * (villager_index as f32), villager_index.to_string())
     }
+    */
     commands.spawn({(
         PlanetSticker {
             planet: Some(main_planet),
@@ -122,6 +124,7 @@ fn setup(
         PlanetWater{},)
     });
     
+    /* 
     commands.spawn({(
         PlanetSticker {
             planet: Some(main_planet),
@@ -139,7 +142,7 @@ fn setup(
         },
         PlanetWater{},)
     });
-
+    */
 
      
 }

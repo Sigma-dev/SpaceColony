@@ -13,16 +13,13 @@ Fix being able to put houses on the ocean
 
 --
 
-Fix radial vs absolute distances:
-Most gameplay distance measurements should be absolute rather than radial.
-Plan A: Look through most of difference/distance measurements and replace them with their arc_ equivalents
+Fix clicks not being registered on occupables
 
 --
 
-Fix collisions near zero:
-Collisions check fail when near zero because of position comparison:
-Plan A:
-Implement a "is_in_between" method that works for edge cases and use that for collision.
+Fix radial vs absolute distances:
+Most gameplay distance measurements should be absolute rather than radial.
+Plan A: Look through most of difference/distance measurements and replace them with their arc_ equivalents
 
 --
 
