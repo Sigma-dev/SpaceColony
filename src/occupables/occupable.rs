@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources
+    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources
 };
 
 #[derive(Resource, Default)]
@@ -293,6 +293,7 @@ fn find_and_assign_villagers(
 
 
 fn handle_automators(
+    planets_query: Query<&Planet>,
     mut automator_query: Query<(Entity, &Automator, &mut Occupable, &PlanetSticker)>,
     mut natural_resource_query: Query<(Entity, &NaturalResource, &mut Occupable, &PlanetSticker), Without<Automator>>,
     mut villager_query: Query<(Entity, &mut VillagerWorking)>,
@@ -304,7 +305,6 @@ fn handle_automators(
                 free.push(villager_entity);
             }   
         }
-        //println!("{}", free.len());
         for (occupable_entity, natural_resource, occupable, occupable_sticker) in natural_resource_query.iter_mut() {
             if free.is_empty() { continue; }
             if automator_entity == occupable_entity { continue; }
@@ -316,7 +316,9 @@ fn handle_automators(
                 }   
             }
             if count == occupable.max_workers { continue; };
-            let dist: f32 = automator_sticker.position_degrees.distance(occupable_sticker.position_degrees.to_f32());
+            let Some(planet_entity) = automator_sticker.planet else { continue; };
+            let Ok(planet) = planets_query.get(planet_entity) else { continue; };
+            let dist: f32 = automator_sticker.position_degrees.arc_distance(occupable_sticker.position_degrees.to_f32(), planet.radius);
             if dist > automator.range { continue; }
             let Some(villager_entity) = free.last() else { continue; };
             let Ok((_, mut villager)) = villager_query.get_mut(*villager_entity) else { continue; };
@@ -408,16 +410,21 @@ pub fn spawn_bush(
     );
 }
 
-pub fn spawn_sawmill(
+pub fn spawn_building(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     planet: Entity,
     position_degrees: f32,
+    building_type: BuildingType,
 ) {
+    let texture_path = match building_type {
+        BuildingType::Sawmill => "buildings/sawmill.png",
+    };
+    let info = building_type.get_building_info();
     spawn_automator(
         commands,
         OccupableBundle::new(
-            asset_server.load("buildings/sawmill.png"),
+            asset_server.load(texture_path),
             planet,
             position_degrees,
             OccupableType::Interior,
@@ -425,7 +432,7 @@ pub fn spawn_sawmill(
             3,
             16.,
         ),
-        32.,
-        ResourceType::Wood
+        info.range,
+        info.exploited_resource
     );
 }

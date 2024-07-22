@@ -1,9 +1,8 @@
 #import bevy_sprite::{mesh2d_vertex_output::VertexOutput, mesh2d_view_bindings::globals}
 const pi = radians(180.0);
-const array_size: u32 = 8;
 
 struct CircleSettings {
-    size: f32
+    radius: f32
 }
 
 @group(2) @binding(0) var<uniform> properties: CircleSettings;
@@ -18,7 +17,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if angle_deg < 0 {
         angle_deg = angle_deg + 360.;
     }
-    let target_len = (properties.size / 100.);
+    //return vec4<f32>(1.); 
+    let target_len = (properties.radius / 100.);
+    //let target_len = (100. / 100.);
     if (len >= target_len || len <= target_len - 0.01) {
         return vec4<f32>(0.0);
     }

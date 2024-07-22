@@ -1,23 +1,46 @@
 Space_colony features
 
-Structure auto exploit:
-Structures should have a zone of influence where the villagers assigned to them will automatically harvest resources.
+--
+
+Homekeeping (LIST):
+Split files into their parts:
+    - Automator
+    - Natural Resource
+    (many others)
+Maybe remove the Option from the planet from planet_stickers, meaningless and verbose imo.
+--
+
+Fix radial vs absolute distances:
+Most gameplay distance measurements should be absolute rather than radial.
+Plan A: Look through most of difference/distance measurements and replace them with their arc_ equivalents
+
+--
+
+Black and white adjustments:
+There should be a way to easily adjust the white and black tints.
 Plan A:
-Add a range to occupables;
-Add a circle shader;
-Auto exploit occupables check each frame for possible resource and do the assigning themselves.
-This might require a rework of the work system, but might also not.
-Plan A.1:
-Iterate through every occupable (A)
-inside that loop, iterate over every occupable (B)
-if A is not a valid automator, or if every one of it's assigned villagers already work outside: return;
-if B is not a valid occupable different from the automator with available space: continue;
-otherwise, set the free villager's job to B
+Make every asset as pure black, then a screen sized shader swaps out the colors.
+--
 
+Structure auto exploit:
+It should check if it is reachable before assigning someone to it.
+--
 
-Etra UX:
-Hovering the structure should show the range and what resources are in range by making them glow (shader).
-This reach should take into consideration whether the resource is reachable.
+Resources should be breakable:
+Resources should eventually expire after resources have been extracted.
+Plan A:
+Resources have a resources remaining field.
+When a villager extracts it, they substract it from the resource.
+
+--
+
+Building menu & cost:
+Buildings should be part of a clickable UI, & should have a required resource cost.
+
+Plan A:
+Tab Slides a UI Panel from the left with a list of buildings. Each building has an icon, a name, a short description and a cost with icons. All of the information are encased in a cube.
+Clicking on the cube sets the ghost to the correct building.
+There should be a way to get a building's information (cost, range, exploited_resource, etc...) by just it's type.
 
 --
 

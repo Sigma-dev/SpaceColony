@@ -53,6 +53,11 @@ impl<const MAX: u32> LoopingFloat<MAX> {
         return abs(self.difference(other));
     }
 
+    pub fn arc_distance(&self, other: f32,  radius: f32) -> f32 {
+        let dist_degrees = self.distance(other);
+        return radius * dist_degrees.to_radians();
+    }
+
     pub fn direction(&self, other: f32) -> i32 {
         let diff = self.difference(other);
         if diff > 0. {return 1;}
