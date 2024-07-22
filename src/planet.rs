@@ -3,7 +3,7 @@ use bevy::{
     math::VectorSpace, prelude::*, reflect::Array, render::{
         mesh::CircleMeshBuilder,
         render_resource::{AsBindGroup, ShaderRef, ShaderType},
-    }, scene::ron::de, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}
+    }, scene::ron::de, sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}
 };
 
 use crate::{looping_float::LoopingFloat, planet_sticker::PlanetSticker};
@@ -45,10 +45,7 @@ impl NewPlanet for PlanetBundle {
     ) -> Self {
         Self {
             mesh: MaterialMesh2dBundle {
-                mesh: Mesh2dHandle(meshes.add(CircleMeshBuilder {
-                    circle: Circle { radius },
-                    resolution: 64,
-                })),
+                mesh: Mesh2dHandle(meshes.add(Rectangle{half_size: Vec2::splat(radius)})),
                 material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { 
                     hole_array: [Vec4::splat(0.); 8]
                 }}),
@@ -65,6 +62,7 @@ pub struct PlanetsPlugin;
 impl Plugin for PlanetsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Planets::default())
+        .add_plugins(Material2dPlugin::<PlanetMaterial>::default())
         .add_systems(Update, (update_water));
     }
 }

@@ -18,7 +18,7 @@ pub struct SelectedOccupable {
 }
 
 #[derive(PartialEq)]
-pub enum OccupableType {
+pub enum  OccupableType {
     Cutting,
     Foraging,
     Interior,
@@ -33,9 +33,18 @@ pub struct OccupancyChange {
 #[derive(Component, PartialEq)]
 pub struct Occupable {
     pub selected: bool,
-    pub workers: Vec<Entity>,
-    pub occupable_type: OccupableType,
     pub max_workers: u32,
+    pub occupable_type: OccupableType
+}
+
+#[derive(Component, PartialEq)]
+pub struct Automator {
+    pub exploited_resource: ResourceType,
+    pub range: f32
+}
+
+#[derive(Component, PartialEq)]
+pub struct NaturalResource {
     pub produced_resource: ResourceType,
 }
 
@@ -89,11 +98,9 @@ impl NewOccupable for OccupableBundle {
                 size_degrees: Some(size_degrees),
             },
             occupable: Occupable {
-                selected: false,
-                workers: Vec::new(),
-                max_workers,
                 occupable_type,
-                produced_resource,
+                selected: false,
+                max_workers,
             },
         }
     }
@@ -106,6 +113,7 @@ impl Plugin for OccupablePlugin {
         app.add_systems(Update, select_entity_system)
             .add_systems(Update, find_and_assign_villagers)
             .add_systems(Update, spawn_ui)
+            .add_systems(Update, handle_automators)
             .insert_resource(SelectedOccupable::default())
             .add_event::<OccupancyChange>();
     }
@@ -250,14 +258,14 @@ fn change_value(
 fn find_and_assign_villagers(
     mut ev_occupancy: EventReader<OccupancyChange>,
     mut wandering_query: Query<(Entity, &PlanetSticker), With<VillagerWandering>>,
-    mut working_query: Query<Entity, With<VillagerWorking>>,
-    mut occupable_query: Query<(&mut Occupable, &PlanetSticker)>,
+    mut working_query: Query<(Entity, &VillagerWorking)>,
+    mut occupable_query: Query<(Entity, &mut Occupable, &PlanetSticker)>,
     mut commands: Commands,
 ) {
     for ev in ev_occupancy.read() {
         if ev.change == 1 {
             for (villager_entity, sticker) in wandering_query.iter_mut() {
-                if let Ok((mut occupable, occupable_sticker)) =
+                if let Ok((_, mut occupable, occupable_sticker)) =
                     occupable_query.get_mut(ev.occupable)
                 {
                     if sticker.planet == occupable_sticker.planet {
@@ -266,26 +274,61 @@ fn find_and_assign_villagers(
                             .remove::<VillagerWandering>()
                             .insert(VillagerWorking {
                                 current_occupable: ev.occupable,
+                                current_work: ev.occupable,
                                 production_interval: 1.0,
                             });
-                        occupable.workers.push(villager_entity);
                         return;
                     }
                 }
             }
         } else if ev.change == -1 {
-            if let Ok((mut occupable, _)) = occupable_query.get_mut(ev.occupable) {
-                if let Some(worker) = occupable.workers.last() {
-                    if let Ok(villager_entity) = working_query.get_mut(*worker) {
-                        commands
-                            .entity(villager_entity)
-                            .remove::<VillagerWorking>()
-                            .insert(VillagerWandering::default());
-                        occupable.workers.pop();
-                    }
+            if let Ok((occupable_entity, mut occupable, _)) = occupable_query.get_mut(ev.occupable) {
+                for (worker_entity, worker) in working_query.iter_mut() {
+                    if worker.current_occupable != occupable_entity { continue; };
+                    commands
+                        .entity(worker_entity)
+                        .remove::<VillagerWorking>()
+                        .insert(VillagerWandering::default());
+                    return;
                 }
             }
         }
+    }
+}
+
+
+fn handle_automators(
+    mut automator_query: Query<(Entity, &Automator, &mut Occupable, &PlanetSticker)>,
+    mut natural_resource_query: Query<(Entity, &NaturalResource, &mut Occupable, &PlanetSticker), Without<Automator>>,
+    mut villager_query: Query<(Entity, &mut VillagerWorking)>,
+) {
+    for (automator_entity, automator, automator_occupable, automator_sticker) in automator_query.iter() {
+        let mut free: Vec<Entity> = vec![];
+        for (villager_entity, villager) in villager_query.iter() {
+            if villager.current_work == automator_entity {
+                free.push(villager_entity);
+            }   
+        }
+        //println!("{}", free.len());
+        for (occupable_entity, natural_resource, occupable, occupable_sticker) in natural_resource_query.iter_mut() {
+            if free.is_empty() { continue; }
+            if automator_entity == occupable_entity { continue; }
+            let mut count = 0;
+            
+            for (_, villager) in villager_query.iter() {
+                if villager.current_work == occupable_entity {
+                    count += 1;
+                }   
+            }
+            if count == occupable.max_workers { continue; };
+            let dist: f32 = automator_sticker.position_degrees.distance(occupable_sticker.position_degrees.to_f32());
+            if dist > automator.range { continue; }
+            let Some(villager_entity) = free.last() else { continue; };
+            let Ok((_, mut villager)) = villager_query.get_mut(*villager_entity) else { continue; };
+            villager.current_work = occupable_entity;
+            free.pop();
+        }
+        
     }
 }
 
@@ -301,13 +344,28 @@ fn select_entity_system(
     }
 }
 
-fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) {
-    commands.spawn((
+fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) -> Entity {
+    return commands.spawn((
         occupable,
         On::<Pointer<Click>>::target_component_mut::<Occupable>(|_, occupable| {
             occupable.selected = true
         }),
-    ));
+        
+    )).id();
+}
+
+fn spawn_natural_resource(commands: &mut Commands, occupable_bundle: OccupableBundle, produced: ResourceType) {
+    let occupable = spawn_occupable(commands, occupable_bundle);
+    commands.entity(occupable).insert(
+        NaturalResource { produced_resource: produced }
+    );
+}
+
+fn spawn_automator(commands: &mut Commands, occupable_bundle: OccupableBundle, range: f32, exploited_resource: ResourceType) {
+    let occupable = spawn_occupable(commands, occupable_bundle);
+    commands.entity(occupable).insert(
+        Automator { exploited_resource, range }
+    );
 }
 
 pub fn spawn_tree(
@@ -316,7 +374,7 @@ pub fn spawn_tree(
     planet: Entity,
     position_degrees: f32,
 ) {
-    spawn_occupable(
+    spawn_natural_resource(
         commands,
         OccupableBundle::new(
             asset_server.load("environment/tree.png"),
@@ -327,6 +385,7 @@ pub fn spawn_tree(
             1,
             8.,
         ),
+        ResourceType::Wood,
     );
 }
 
@@ -336,7 +395,7 @@ pub fn spawn_bush(
     planet: Entity,
     position_degrees: f32,
 ) {
-    spawn_occupable(
+    spawn_natural_resource(
         commands,
         OccupableBundle::new(
             asset_server.load("environment/bush.png"),
@@ -347,6 +406,7 @@ pub fn spawn_bush(
             1,
             8.,
         ),
+        ResourceType::Food
     );
 }
 
@@ -356,7 +416,7 @@ pub fn spawn_sawmill(
     planet: Entity,
     position_degrees: f32,
 ) {
-    spawn_occupable(
+    spawn_automator(
         commands,
         OccupableBundle::new(
             asset_server.load("buildings/sawmill.png"),
@@ -367,5 +427,7 @@ pub fn spawn_sawmill(
             3,
             16.,
         ),
+        32.,
+        ResourceType::Wood
     );
 }

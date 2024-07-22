@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
 use crate::looping_float::LoopingFloat;
-use crate::occupable::{Occupable, OccupableType};
+use crate::occupable::{self, Occupable, OccupableType};
 use crate::planet::{self, Planet, PlanetWater};
 use crate::planet_sticker::{self, PlanetSticker};
 use crate::resources::Resources;
-use crate::spritesheet_animator;
+use crate::{spritesheet_animator, NaturalResource};
 use rand::Rng;
 
 pub enum PlanetVillagerAnimationState {
@@ -23,7 +23,19 @@ pub struct PlanetVillager {
 #[derive(Component)]
 pub struct VillagerWorking {
     pub current_occupable: Entity,
+    pub current_work: Entity,
     pub production_interval: f32,
+}
+
+pub trait Worker {
+    fn put_to_work(&mut self, villager_entity: Entity, occupable: &mut Occupable, occupable_entity: Entity);
+}
+
+impl Worker for VillagerWorking {
+    fn put_to_work(&mut self, villager_entity: Entity, occupable: &mut Occupable, occupable_entity: Entity) {
+        self.current_occupable = occupable_entity;
+       // occupable.workers.push(villager_entity);
+    }
 }
 
 #[derive(Component)]
@@ -187,6 +199,7 @@ fn handle_working_villagers(
     )>,
     water_query: Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     occupable_query: Query<(&Occupable, &PlanetSticker), Without<VillagerWorking>>,
+    natural_resource_query: Query<&NaturalResource>,
     time: Res<Time>,
     mut resources: ResMut<Resources>
 ) {
@@ -195,7 +208,7 @@ fn handle_working_villagers(
     {
         let Some(planet_entity) = sticker.planet else {return;};
         *visibility = Visibility::Visible;
-        if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_occupable) {
+        if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_work) {
             let mut target = occupable_sticker.position_degrees;
             if occupable.occupable_type != OccupableType::Interior {
                 target += sticker
@@ -219,12 +232,14 @@ fn handle_working_villagers(
                     OccupableType::Interior => PlanetVillagerAnimationState::Idle
                 };
                 animator.current_animation_index = anim as u32;
-                worker.production_interval -= time.delta_seconds();
-                if worker.production_interval <= 0.0 {
-                    let index = occupable.produced_resource as i32;
-                    let current_value = resources.stored.get(&index).copied().unwrap_or(0);
-                    resources.stored.insert(index, current_value + 1 as i32);
-                    worker.production_interval = 1.0;
+                if let Ok(natural_resource) = natural_resource_query.get(worker.current_work) {
+                    worker.production_interval -= time.delta_seconds();
+                    if worker.production_interval <= 0.0 {
+                        let index = natural_resource.produced_resource as i32;
+                        let current_value = resources.stored.get(&index).copied().unwrap_or(0);
+                        resources.stored.insert(index, current_value + 1 as i32);
+                        worker.production_interval = 1.0;
+                    }
                 }
                 if occupable.occupable_type == OccupableType::Interior {
                     *visibility = Visibility::Hidden
@@ -258,4 +273,26 @@ pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, 
         },
         VillagerWandering::default(),
     ));
+}
+
+pub fn count_workers(worker_query: &Query<&VillagerWorking>, occupable_entity: Entity) -> u32 {
+    let mut count = 0;
+    for worker in worker_query {
+        if worker.current_work == occupable_entity {
+            count += 1;
+        } else if worker.current_occupable == occupable_entity {
+            count += 1;
+        }
+    }
+    return count;
+}
+
+pub fn count_occupiers(worker_query: &Query<&VillagerWorking>, occupable_entity: Entity) -> u32 {
+    let mut count = 0;
+    for worker in worker_query {
+        if worker.current_occupable == occupable_entity {
+            count += 1;
+        }
+    }
+    return count;
 }

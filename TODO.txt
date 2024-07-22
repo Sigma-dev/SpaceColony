@@ -1,5 +1,95 @@
 Space_colony features
-Resource spawning:
-Instead of static resources, go the forager way ?
-Adds more micromanagement unless new assignement system (assign to building then he cuts the tress around it automatically ?)
-For the spawning: runs for each planet, find a random free spot and spawns it
+
+Structure auto exploit:
+Structures should have a zone of influence where the villagers assigned to them will automatically harvest resources.
+Plan A:
+Add a range to occupables;
+Add a circle shader;
+Auto exploit occupables check each frame for possible resource and do the assigning themselves.
+This might require a rework of the work system, but might also not.
+Plan A.1:
+Iterate through every occupable (A)
+inside that loop, iterate over every occupable (B)
+if A is not a valid automator, or if every one of it's assigned villagers already work outside: return;
+if B is not a valid occupable different from the automator with available space: continue;
+otherwise, set the free villager's job to B
+
+
+Etra UX:
+Hovering the structure should show the range and what resources are in range by making them glow (shader).
+This reach should take into consideration whether the resource is reachable.
+
+--
+
+Resources spawn automatically:
+Resources should spawn periodically up to a maximum per type
+Plan A:
+Randomly select a position on the planet:
+    if it's taken by another sticker (that isn't water): retry
+    if it's water spawn a fish;
+    if it's ground spawn either a tree or bush;
+There should be a resource for tracking how much of each there are. Probably should go with a resourceOccupableType enum or smth    
+--
+Villagers spawn on top of other villagers:
+Villagers should spawn on top of another villager as to not get stuck
+Plan A:
+Find first villager on main planet and spawn them there
+--
+Automatic planet generation:
+Planets should generate randomly for each playthrough, placing landmarks like oceans (and maybe biomes in the future) automatically a.
+Plan A:
+Generate number of wanted waters
+For each water:
+    Generate size (range);
+    Generate position (whole planet);
+    if position overlaps with other water retry water;
+--
+Water activities:
+The player should be able to create ports on the ends of oceans in order to go on the water.
+A port on each side allows the villager to cross.
+Fish spawn automatically, and villagers assigned to the port go out to fish.
+Plan A:
+Add port building, that when placed, check if it is at the edge of the water to be valid
+The water has 2 fields for port entities Some(Entity) that then dictate what a villager can do.
+The fish are an occupable like any other, that just renders lower.
+Ports allow for auto fishing.
+When a villager "walks" on water, they get a sprite with them rowing a boat
+When a villager fishes, they are pictured fishing.
+Requires rewriting part of the can_walk logic so that walking on the ocean is allowed under certain port conditions.
+--
+Putting the space in space_colony:
+The player should be able to extend their colony to other planets with rocketships.
+Plan A:
+For now keep it simple, shared resources, choose where villagers spawn when you get a new one if you have two planets
+The player needs to first build a space port, then assign villagers that will use resources to advance a progress bar.
+When it is complete, send a villager to a selected new planet.
+The spaceport remains but you need more materials to make a new rocket.
+
+SPECULATION / WILD IDEAS
+
+Biomes:
+The planets should have varying biomes that offer varying resources (and perhaps challenges).
+Biomes are determined on planet generation.
+Plan A:
+
+New villager work system for automators:
+
+Occupable Component:
+- selected: bool
+- workers_nb: u32
+- max_workers: u32
+- work_type: OccupableType
+Is used by the counters to know what to display.
+The counters send occupancy changes through events that hold the Entity and the changes
+
+Automator:
+- exploited_resource_type: ResourceType
+- range: f32
+
+Resource:
+- resource_type: ResourceType
+
+VillagerWorking:
+pub current_occupable: Entity,
+pub work_type: WorkType (the different)
+pub production_interval: f32,

@@ -1,6 +1,6 @@
 use approx::AbsDiffEq;
 use bevy::{
-    input::mouse, math::VectorSpace, prelude::*, render::mesh::CircleMeshBuilder, scene::ron::de, sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle}
+    input::mouse, math::VectorSpace, prelude::*, render::{mesh::CircleMeshBuilder, render_resource::{AsBindGroup, ShaderRef, ShaderType}}, scene::ron::de, sprite::{Anchor, Material2d, MaterialMesh2dBundle, Mesh2dHandle}
 };
 use crate::{looping_float::{self, LoopingFloat}, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_sawmill, OccupableType};
 
@@ -17,6 +17,23 @@ pub struct PlanetPlacing {
     building_type: Option<BuildingType>,
 }
 
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct CircleMaterial {
+    #[uniform(0)]
+    settings: CircleSettings,
+}
+
+#[derive(ShaderType, Debug, Clone)]
+struct CircleSettings {
+    size: f32,
+}
+
+impl Material2d for CircleMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/circle.wgsl".into()
+    }
+}
+
 pub struct PlanetPlacingPlugin;
 
 impl Plugin for PlanetPlacingPlugin {
@@ -29,6 +46,8 @@ impl Plugin for PlanetPlacingPlugin {
 
 fn spawn_ghost(
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut circle_materials: ResMut<Assets<CircleMaterial>>,
 ) {
     commands.spawn((SpriteBundle {
         ..default()
@@ -38,7 +57,16 @@ fn spawn_ghost(
         size_degrees: Some(16.),
         ..default()
     }
-    ));
+    )).with_children(|parent| {
+        parent.spawn((
+            MaterialMesh2dBundle {
+                mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2::new(100., 100.)})),
+                material: circle_materials.add(CircleMaterial { settings: CircleSettings { 
+                    size: 50.
+                }}),
+                ..default()
+            }
+        )); });
     commands.insert_resource(PlanetPlacing { building_type: None })
 }
 

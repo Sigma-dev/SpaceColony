@@ -1,4 +1,4 @@
-use crate::{occupables::*, planet::PlanetWater, planet_sticker::{self, PlanetSticker}, planet_villager::{self, PlanetVillager, VillagerWandering, VillagerWorking}, Occupable};
+use crate::{occupables::*, planet::PlanetWater, planet_sticker::{self, PlanetSticker}, planet_villager::{self, count_occupiers, count_workers, PlanetVillager, VillagerWandering, VillagerWorking}, Occupable};
 use bevy::prelude::*;
 use occupable::OccupancyChange;
 
@@ -13,23 +13,41 @@ pub struct OccupableCounterPlugin;
 
 impl Plugin for OccupableCounterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_events, handle_counters));
+        app.add_systems(Update, (handle_count, handle_counters));
     }
 }
 
 fn handle_events(
     mut counters_query: Query<(&mut TextureAtlas, &Parent, &mut OccupableCounter)>,
     occupables_query: Query<&occupable::Occupable>,
+    worker_query: Query<&VillagerWorking>,
     mut ev_occupancy: EventReader<OccupancyChange>,
 ) {
     for ev in ev_occupancy.read() {
         if let Ok(_) = occupables_query.get(ev.occupable) {
             for (mut atlas, parent, mut counter) in counters_query.iter_mut() {
                 if parent.get() == ev.occupable {
-                    counter.count += ev.change;
+                    //counter.count += ev.change;
+                    let count = count_workers(&worker_query, ev.occupable);
+                    counter.count = count as i32;
                     atlas.index = counter.count as usize;
                 }
             }
+        }
+    }
+}
+
+fn handle_count(
+    mut counters_query: Query<(&mut TextureAtlas, &Parent, &mut OccupableCounter)>,
+    occupables_query: Query<(Entity, &occupable::Occupable)>,
+    worker_query: Query<&VillagerWorking>,
+) {
+    for (mut atlas, parent, mut counter) in counters_query.iter_mut() {
+        if let Ok((occupable_entity, occupable)) = occupables_query.get(parent.get()) {
+            //counter.count += ev.change;
+            let count = count_workers(&worker_query, occupable_entity);
+            counter.count = count as i32;
+            atlas.index = counter.count as usize;
         }
     }
 }
@@ -43,7 +61,8 @@ fn handle_counters(
     occupables_query: Query<(Entity, &occupable::Occupable, &planet_sticker::PlanetSticker)>,
     mut visibility_query: Query<&mut Visibility, Without<OccupableCounter>>,
     selected_occupable: Res<occupable::SelectedOccupable>,
-    villager_query: Query<&PlanetSticker, With<VillagerWandering>>,
+    wandering_query: Query<&PlanetSticker, With<VillagerWandering>>,
+    working_query: Query<&VillagerWorking>,
     water_query: Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
 ) {
     for (parent, counter, visibility) in counters_query.iter_mut() {
@@ -51,27 +70,24 @@ fn handle_counters(
             handle_selected(&selected_occupable, visibility, occupable_entity);
             if let Ok(mut minus_vis) = visibility_query.get_mut(counter.minus_button) {
                 *minus_vis = Visibility::Inherited;
-                if occupable.workers.len() == 0 {
+                if count_occupiers(&working_query, occupable_entity) == 0 {
                     *minus_vis = Visibility::Hidden;
                 }
             }
             if let Ok(mut plus_vis) = visibility_query.get_mut(counter.plus_button) {
                 *plus_vis = Visibility::Inherited;
-                if occupable.workers.len() as u32 >= occupable.max_workers {
+                if count_workers(&working_query, occupable_entity) >= occupable.max_workers {
                     *plus_vis = Visibility::Hidden;
                 }
-                for villager_sticker in villager_query.iter() {
-                    let mut found = false;
+                let mut found = false;
+                for villager_sticker in wandering_query.iter() {
                     if villager_sticker.planet == occupable_sticker.planet {
                         if planet_villager::get_walk_dir(&villager_sticker, &water_query, occupable_sticker.position_degrees).is_some() {
-                            found = true
+                            found = true;
                         }
-                    }
-                    if !found { 
-                        *plus_vis = Visibility::Hidden; 
-                    }
+                    }   
                 }
-                if villager_query.is_empty() {
+                if !found { 
                     *plus_vis = Visibility::Hidden; 
                 }
             }

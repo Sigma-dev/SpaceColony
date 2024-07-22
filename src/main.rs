@@ -28,6 +28,7 @@ use bevy::{
 };
 use bevy_mod_picking::prelude::*;
 use planet::{NewPlanet, PlanetMaterial, PlanetWater, Planets};
+use planet_placing::CircleMaterial;
 use planet_sticker::PlanetSticker;
 use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
@@ -62,7 +63,7 @@ fn main() {
         ))
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((bevy::diagnostic::FrameTimeDiagnosticsPlugin, PerfUiPlugin))
-        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<PlanetMaterial>::default()))
+        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<CircleMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
