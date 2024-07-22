@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use bevy::prelude::*;
 
 use crate::looping_float::LoopingFloat;
@@ -12,20 +14,58 @@ pub struct PlanetSticker {
 
 pub trait IsCollidingWith {
     fn is_colliding_with(&self, other: &PlanetSticker) -> bool;
+    fn is_colliding_with_pos(&self, other_pos: f32, other_size: f32) -> bool;
 }
 
 impl IsCollidingWith for PlanetSticker {
     fn is_colliding_with(&self, other: &PlanetSticker) -> bool {
         let Some(planet) = self.planet else { return false };
         let Some(other_planet) = other.planet else { return false };
-        let Some(size) = self.size_degrees else { return false };
         let Some(other_size) = other.size_degrees else { return false };
         if planet != other_planet {
                 return false;
         }
-        let dist = self.position_degrees.distance(other.position_degrees.to_f32());
-        let max = (size / 2.) + (other_size / 2.);
-        return dist < max
+        return self.is_colliding_with_pos(other.position_degrees.to_f32(), other_size)
+    }
+
+    fn is_colliding_with_pos(&self, other_pos: f32, other_size: f32) -> bool {
+        let Some(size) = self.size_degrees else { return false };
+        let pos_self = Vec2::new((self.position_degrees - size / 2.).to_f32(), (self.position_degrees + size / 2.).to_f32());
+        let pos_other = Vec2::new(other_pos - other_size / 2., other_pos + other_size / 2.);
+        if pos_self.x < pos_other.x && pos_self.y > pos_other.x {
+            return true;
+        }
+        if pos_self.x < pos_other.y && pos_self.y > pos_other.y {
+            return true;
+        }
+        return false;
+    }
+}
+
+pub trait Contains {
+    fn contains(&self, other: f32) -> bool;
+}
+
+impl Contains for PlanetSticker {
+    fn contains(&self, pos: f32) -> bool {
+        let Some(size) = self.size_degrees else { return false; };
+        if self.position_degrees.distance(pos) > size / 2. {
+            return false;
+        }
+        return true;
+    }
+}
+
+pub trait EdgeDistanceTo {
+    fn edge_distance_to(&self, pos: f32) -> f32;
+}
+
+impl EdgeDistanceTo for PlanetSticker {
+    fn edge_distance_to(&self, pos: f32) -> f32 {
+        let size = self.size_degrees.unwrap_or(0.);
+        let left_pos = self.position_degrees - size / 2.;
+        let right_pos = self.position_degrees + size / 2.;
+        return left_pos.distance(pos).min(right_pos.distance(pos));
     }
 }
 

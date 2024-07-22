@@ -101,7 +101,7 @@ fn setup(
         .id();
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
-    for tree_index in 0..2 {
+    for tree_index in 0..1 {
         spawn_tree(&mut commands, &asset_server, main_planet, tree_index as f32 * 180.);
     }
     for bush_index in 0..1 {

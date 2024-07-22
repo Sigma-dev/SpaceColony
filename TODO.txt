@@ -5,8 +5,7 @@ Space_colony features
 Homekeeping (LIST):
 Split files into their parts:
     - Automator
-    - Natural Resource
-    (many others)
+     (many others)
 Maybe remove the Option from the planet from planet_stickers, meaningless and verbose imo.
 --
 
@@ -16,18 +15,17 @@ Plan A: Look through most of difference/distance measurements and replace them w
 
 --
 
+Fix collisions near zero:
+Collisions check fail when near zero because of position comparison:
+Plan A:
+Implement a "is_in_between" method that works for edge cases and use that for collision.
+
+--
+
 Black and white adjustments:
 There should be a way to easily adjust the white and black tints.
 Plan A:
 Make every asset as pure black, then a screen sized shader swaps out the colors.
-
---
-
-Resources should be breakable:
-Resources should eventually expire after resources have been extracted.
-Plan A:
-Resources have a resources remaining field.
-When a villager extracts it, they substract it from the resource.
 
 --
 
@@ -49,6 +47,11 @@ Randomly select a position on the planet:
     if it's water spawn a fish;
     if it's ground spawn either a tree or bush;
 There should be a resource for tracking how much of each there are. Probably should go with a resourceOccupableType enum or smth    
+Plan A.1:
+No checking how much just a random sample every second or so, after the planet is almost full samples will fail more often so it balances out kinda
+
+UX:
+There should be an animation for spawning and being destroyed, probably scaling for now.
 --
 Villagers spawn on top of other villagers:
 Villagers should spawn on top of another villager as to not get stuck

@@ -16,6 +16,7 @@ pub struct SelectedOccupable {
 pub enum  OccupableType {
     Cutting,
     Foraging,
+    Fishing,
     Interior,
 }
 

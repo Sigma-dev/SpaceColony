@@ -231,7 +231,8 @@ fn handle_working_villagers(
                 let anim = match occupable.occupable_type {
                     OccupableType::Cutting => PlanetVillagerAnimationState::Cut,
                     OccupableType::Foraging => PlanetVillagerAnimationState::Forage,
-                    OccupableType::Interior => PlanetVillagerAnimationState::Idle
+                    OccupableType::Interior => PlanetVillagerAnimationState::Idle,
+                    OccupableType::Fishing => PlanetVillagerAnimationState::Forage,
                 };
                 animator.current_animation_index = anim as u32;
                 if let Ok(mut natural_resource) = natural_resource_query.get_mut(worker.current_work) {
