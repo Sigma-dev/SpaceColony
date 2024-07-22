@@ -1,9 +1,9 @@
 use std::{f32::INFINITY, time::Duration};
 
-use bevy::{prelude::*, time::common_conditions::on_timer};
+use bevy::{math::VectorSpace, prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 
-use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{Contains, EdgeDistanceTo, IsCollidingWith, PlanetSticker}, spawn_occupable, NewOccupable, OccupableBundle, OccupableType, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{Contains, EdgeDistanceTo, IsCollidingWith, PlanetSticker}, scaling_sprite::ScalingSprite, spawn_occupable, NewOccupable, Occupable, OccupableBundle, OccupableType, ResourceType};
 
 #[derive(Component, PartialEq)]
 pub struct NaturalResource {
@@ -72,11 +72,16 @@ fn handle_spawning_resources(
 
 fn handle_natural_resources (
     mut commands: Commands,
-    natural_resource_query: Query<(Entity, &NaturalResource)>
+    mut natural_resource_query: Query<(Entity, &NaturalResource, &Transform, &mut ScalingSprite)>
 ) {
-    for (natural_resource_entity, natural_resource) in natural_resource_query.iter() {
+    for (natural_resource_entity, natural_resource, transform, mut scaling) in natural_resource_query.iter_mut() {
         if (natural_resource.amount_remaining <= 0) {
-            commands.entity(natural_resource_entity).despawn_recursive()
+            scaling.target_scale = Vec3::ZERO;
+            commands.entity(natural_resource_entity).despawn_descendants();
+            commands.entity(natural_resource_entity).remove::<(Occupable)>();
+            if (transform.scale == Vec3::ZERO) {
+                commands.entity(natural_resource_entity).despawn();
+            }
         }
     }
 }
@@ -111,7 +116,7 @@ pub fn spawn_tree(
             bevy::sprite::Anchor::BottomCenter
         ),
         ResourceType::Wood,
-        20,
+        2,
     );
 }
 
@@ -134,7 +139,7 @@ pub fn spawn_bush(
             bevy::sprite::Anchor::BottomCenter
         ),
         ResourceType::Food,
-        20,
+        10,
     );
 }
 
@@ -157,6 +162,6 @@ pub fn spawn_fish(
             bevy::sprite::Anchor::Custom(Vec2::new(0., 1.))
         ),
         ResourceType::Food,
-        20,
+        10,
     );
 }

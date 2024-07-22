@@ -26,6 +26,7 @@ mod background;
 mod mouse_position;
 mod blinking_sprite;
 mod natural_resource;
+mod scaling_sprite;
 
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
@@ -36,6 +37,7 @@ use planet_placing::CircleMaterial;
 use planet_sticker::PlanetSticker;
 use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
+use scaling_sprite::{ScalingSprite, ScalingSpritePlugin};
 use ui::CustomUiPlugin;
 
 fn main() {
@@ -66,6 +68,7 @@ fn main() {
             MousePositionPlugin,
             BlinkingSpritePlugin,
             NaturalResourcePlugin,
+            ScalingSpritePlugin,
         ))
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((bevy::diagnostic::FrameTimeDiagnosticsPlugin, PerfUiPlugin))

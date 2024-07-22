@@ -30,12 +30,22 @@ impl IsCollidingWith for PlanetSticker {
 
     fn is_colliding_with_pos(&self, other_pos: f32, other_size: f32) -> bool {
         let Some(size) = self.size_degrees else { return false };
+        let left_self = self.position_degrees - size / 2.;
+        let right_self = self.position_degrees + size / 2.;
         let pos_self = Vec2::new((self.position_degrees - size / 2.).to_f32(), (self.position_degrees + size / 2.).to_f32());
         let pos_other = Vec2::new(other_pos - other_size / 2., other_pos + other_size / 2.);
+        /* 
         if pos_self.x < pos_other.x && pos_self.y > pos_other.x {
             return true;
         }
         if pos_self.x < pos_other.y && pos_self.y > pos_other.y {
+            return true;
+        }
+        */
+        if (left_self.is_in_between(pos_other.x, right_self.to_f32(), true)) {
+            return true;
+        }
+        if (left_self.is_in_between(pos_other.y, right_self.to_f32(), true)) {
             return true;
         }
         return false;

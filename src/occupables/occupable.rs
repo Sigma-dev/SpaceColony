@@ -1,10 +1,10 @@
 use std::process::Child;
 
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{math::VectorSpace, prelude::*, sprite::Anchor};
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, natural_resource::NaturalResource, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources
+    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, natural_resource::NaturalResource, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources, scaling_sprite::ScalingSprite
 };
 
 #[derive(Resource, Default)]
@@ -50,6 +50,7 @@ pub struct OccupableBundle {
     sprite_bundle: SpriteBundle,
     planet_sticker: PlanetSticker,
     occupable: Occupable,
+    scaling: ScalingSprite,
 }
 
 pub trait NewOccupable {
@@ -82,6 +83,10 @@ impl NewOccupable for OccupableBundle {
                     anchor,
                     ..default()
                 },
+                transform: Transform {
+                    scale: Vec3::ZERO,
+                    ..default()
+                },
                 texture,
                 ..default()
             },
@@ -95,6 +100,7 @@ impl NewOccupable for OccupableBundle {
                 selected: false,
                 max_workers,
             },
+            scaling: ScalingSprite { target_scale: Vec3::ONE }
         }
     }
 }
@@ -318,6 +324,7 @@ fn handle_automators(
             let Ok(planet) = planets_query.get(planet_entity) else { continue; };
             let dist: f32 = automator_sticker.position_degrees.arc_distance(occupable_sticker.position_degrees.to_f32(), planet.radius);
             if dist > automator.range { continue; }
+            if (automator.exploited_resource != natural_resource.produced_resource) { continue; };
             let Some(villager_entity) = free.last() else { continue; };
             let Ok((_, mut villager)) = villager_query.get_mut(*villager_entity) else { continue; };
             villager.current_work = occupable_entity;
