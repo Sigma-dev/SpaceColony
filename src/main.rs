@@ -76,6 +76,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
+        .insert_resource(DebugPickingMode::Normal)
         .run();
 }
 
@@ -89,22 +90,23 @@ fn setup(
 ) {
     commands.spawn((PerfUiRoot::default(),
     PerfUiEntryFPS::default(),));
-    commands.spawn(Camera2dBundle {
-        projection: OrthographicProjection {
-            far: 1000.,
-            near: -1000.,
-            scale: 0.4,
+    commands.spawn((Camera2dBundle {
+            projection: OrthographicProjection {
+                far: 1000.,
+                near: -1000.,
+                scale: 0.4,
+                ..default()
+            },
             ..default()
-        },
-        ..default()
-    });
+        }, 
+        Name::new("Camera")
+    ));
 
     let main_planet = commands
-        .spawn(planet::PlanetBundle::new(100., &mut meshes, planet_materials))
+        .spawn((planet::PlanetBundle::new(100., &mut meshes, planet_materials), Name::new("MainPlanet")))
         .id();
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
-    /* 
     for tree_index in 0..1 {
         spawn_tree(&mut commands, &asset_server, main_planet, tree_index as f32 * 180.);
     }
@@ -114,14 +116,15 @@ fn setup(
     for villager_index in 0..1 {
         spawn_villager(&mut commands, &asset_server, main_planet, 30. + 45. * (villager_index as f32), villager_index.to_string())
     }
-    */
     commands.spawn({(
         PlanetSticker {
             planet: Some(main_planet),
             position_degrees: LoopingFloat::new(67.5),
             size_degrees: Some(45.)
         },
-        PlanetWater{},)
+        PlanetWater{},
+        Name::new("Water")
+    )
     });
     
     /* 

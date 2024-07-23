@@ -7,9 +7,6 @@ Split files into their parts:
     - Automator
      (many others)
 Maybe remove the Option from the planet from planet_stickers, meaningless and verbose imo.
---
-
-Fix being able to put houses on the ocean
 
 --
 

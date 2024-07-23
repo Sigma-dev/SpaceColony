@@ -74,7 +74,8 @@ fn spawn_ghost(
     PlanetSticker {
         size_degrees: Some(16.),
         ..default()
-    }
+    },
+    Name::new("PlacingGhost")
     )).with_children(|parent| {
         parent.spawn((
             MaterialMesh2dBundle {
@@ -83,7 +84,8 @@ fn spawn_ghost(
                     radius: 50.
                 }}),
                 ..default()
-            }
+            },
+            Name::new("PlacingGhostCircle")
         )); });
     commands.insert_resource(PlanetPlacing { building_type: None })
 }

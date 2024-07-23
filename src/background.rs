@@ -27,15 +27,17 @@ fn spawn_background(
     mut meshes: ResMut<Assets<Mesh>>,
     mut custom_materials: ResMut<Assets<StarsMaterial>>,
 ) {
-    commands.spawn((MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
-        material: custom_materials.add(StarsMaterial { }),
-        transform: Transform {
-            translation: Vec3 { x: 0., y: 0., z: -100. },
+    commands.spawn((
+        Name::new("Background"),
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
+            material: custom_materials.add(StarsMaterial { }),
+            transform: Transform {
+                translation: Vec3 { x: 0., y: 0., z: -100. },
+                ..default()
+            },
             ..default()
         },
-        ..default()
-    },
     Background,)
     );
 }

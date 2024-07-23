@@ -177,6 +177,7 @@ fn spawn_symbol(
                 )),
                 index: index as usize,
             },
+            Name::new("Symbol")
         ))
         .id();
 }
@@ -352,7 +353,7 @@ pub fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) -> E
         On::<Pointer<Click>>::target_component_mut::<Occupable>(|_, occupable| {
             occupable.selected = true
         }),
-        
+        Name::new("Occupable")
     )).id();
 }
 

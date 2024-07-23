@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_mod_picking::prelude::Pickable;
 
 use crate::looping_float::LoopingFloat;
 use crate::occupable::{self, Occupable, OccupableType};
@@ -289,6 +290,8 @@ pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, 
             _name: format!("{}", name),
         },
         VillagerWandering::default(),
+        Pickable::IGNORE,
+        Name::new("Villager")
     ));
 }
 
