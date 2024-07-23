@@ -34,7 +34,7 @@ fn handle_water(len: f32, angle: f32, time: f32) -> vec4<f32> {
         if len > 0.99 - sum {
             return vec4<f32>(1., 1.0, 1.0, 1.0);
         } else {
-            return vec4<f32>(0.024, 0.025, 0.028, 1.);
+            return vec4<f32>(0., 0., 0., 1.);
         }
     }
     return vec4<f32>(0., 1.0, 1.0, 0.0);

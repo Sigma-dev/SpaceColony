@@ -1,6 +1,6 @@
 use bevy::{app::*, prelude::*, utils::*};
 
-use crate::{planet::Planets, planet_villager::spawn_villager, resources::Resources, ResourceType};
+use crate::{planet::Planets, planet_sticker::PlanetSticker, planet_villager::{spawn_villager, PlanetVillager, VillagerWandering}, resources::Resources, ResourceType};
 
 pub struct VillagerSpawnPlugin;
 
@@ -15,19 +15,28 @@ fn handle_spawn(
     asset_server: Res<AssetServer>,
     mut resources: ResMut<Resources>,
     planets: Res<Planets>,
+    villagers_query: Query<&PlanetSticker, With<PlanetVillager>>
 ) {
     let index = &(ResourceType::Food as i32);
     let current_value = resources.stored.get(index).copied().unwrap_or(0);
-    if current_value > 10 {
-        resources.stored.insert(*index, current_value - 10 as i32);
+    let cap = 10;
+    if current_value >= cap {
+        resources.stored.insert(*index, current_value - cap as i32);
         if let Some(main_planet) = planets.main {
+            let mut pos = 0.;
+            for (villager) in villagers_query.iter() {
+                if (villager.planet != planets.main) { continue; }
+                pos = villager.position_degrees.to_f32();
+            }
             spawn_villager(
                 &mut commands,
                 &asset_server,
                 main_planet,
-                0.,
+                pos,
                 "spawned".to_owned(),
-            )
+            );
+            return;
         }
+        
     }
 }

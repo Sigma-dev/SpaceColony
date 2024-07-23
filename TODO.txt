@@ -18,13 +18,6 @@ Plan A: Look through most of difference/distance measurements and replace them w
 
 --
 
-Black and white adjustments:
-There should be a way to easily adjust the white and black tints.
-Plan A:
-Make every asset as pure black, then a screen sized shader swaps out the colors.
-
---
-
 Building menu & cost:
 Buildings should be part of a clickable UI, & should have a required resource cost.
 
@@ -39,7 +32,13 @@ Villagers spawn on top of other villagers:
 Villagers should spawn on top of another villager as to not get stuck
 Plan A:
 Find first villager on main planet and spawn them there
+
 --
+
+Food cost for new villagers should go up exponentially
+
+--
+
 Automatic planet generation:
 Planets should generate randomly for each playthrough, placing landmarks like oceans (and maybe biomes in the future) automatically a.
 Plan A:
@@ -48,6 +47,7 @@ For each water:
     Generate size (range);
     Generate position (whole planet);
     if position overlaps with other water retry water;
+
 --
 
 Destroying Buildings:
