@@ -7,6 +7,7 @@ mod occupables {
 
 use background::BackgroundPlugin;
 use blinking_sprite::BlinkingSpritePlugin;
+use color_correction::{PostProcessPlugin, PostProcessSettings};
 use iyes_perf_ui::{entries::{PerfUiBundle, PerfUiCompleteBundle}, prelude::PerfUiEntryFPS, ui::root::PerfUiRoot, PerfUiPlugin};
 use looping_float::LoopingFloat;
 use mouse_position::{MousePosition, MousePositionPlugin};
@@ -27,6 +28,7 @@ mod mouse_position;
 mod blinking_sprite;
 mod natural_resource;
 mod scaling_sprite;
+mod color_correction;
 
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
@@ -71,12 +73,12 @@ fn main() {
             ScalingSpritePlugin,
         ))
         .add_plugins(NoisyShaderPlugin)
+        .add_plugins(PostProcessPlugin)
         .add_plugins((bevy::diagnostic::FrameTimeDiagnosticsPlugin, PerfUiPlugin))
         .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<CircleMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
         .insert_resource(Msaa::Off)
-        .insert_resource(DebugPickingMode::Normal)
         .run();
 }
 
@@ -98,7 +100,11 @@ fn setup(
                 ..default()
             },
             ..default()
-        }, 
+        },
+        PostProcessSettings {
+            white_color: Vec3::new(1., 1., 1.),
+            black_color: Vec3::new(0.024, 0.025, 0.028),
+        },
         Name::new("Camera")
     ));
 

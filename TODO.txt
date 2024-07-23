@@ -6,11 +6,9 @@ Homekeeping (LIST):
 Split files into their parts:
     - Automator
      (many others)
+Arrange files into folders:
+    common (everything that may be reused)
 Maybe remove the Option from the planet from planet_stickers, meaningless and verbose imo.
-
---
-
-Fix clicks not being registered on occupables
 
 --
 
