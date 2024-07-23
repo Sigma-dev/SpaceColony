@@ -6,6 +6,7 @@ mod occupables {
 }
 
 use background::BackgroundPlugin;
+use bevy_pancam::{PanCam, PanCamPlugin};
 use blinking_sprite::BlinkingSpritePlugin;
 use color_correction::{PostProcessPlugin, PostProcessSettings};
 use iyes_perf_ui::{entries::{PerfUiBundle, PerfUiCompleteBundle}, prelude::PerfUiEntryFPS, ui::root::PerfUiRoot, PerfUiPlugin};
@@ -74,6 +75,7 @@ fn main() {
         ))
         .add_plugins(NoisyShaderPlugin)
         .add_plugins(PostProcessPlugin)
+        .add_plugins(PanCamPlugin::default())
         .add_plugins((bevy::diagnostic::FrameTimeDiagnosticsPlugin, PerfUiPlugin))
         .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<CircleMaterial>::default()))
         .add_systems(Startup, setup)
@@ -104,6 +106,10 @@ fn setup(
         PostProcessSettings {
             white_color: Vec3::new(1., 1., 1.),
             black_color: Vec3::new(0.024, 0.025, 0.028),
+        },
+        PanCam {
+            enabled: true,
+            ..default()
         },
         Name::new("Camera")
     ));

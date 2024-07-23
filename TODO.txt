@@ -12,6 +12,10 @@ Maybe remove the Option from the planet from planet_stickers, meaningless and ve
 
 --
 
+Player should be able to move the camera
+
+--
+
 Fix radial vs absolute distances:
 Most gameplay distance measurements should be absolute rather than radial.
 Plan A: Look through most of difference/distance measurements and replace them with their arc_ equivalents
@@ -25,13 +29,6 @@ Plan A:
 Tab Slides a UI Panel from the left with a list of buildings. Each building has an icon, a name, a short description and a cost with icons. All of the information are encased in a cube.
 Clicking on the cube sets the ghost to the correct building.
 There should be a way to get a building's information (cost, range, exploited_resource, etc...) by just it's type.
-
---
-
-Villagers spawn on top of other villagers:
-Villagers should spawn on top of another villager as to not get stuck
-Plan A:
-Find first villager on main planet and spawn them there
 
 --
 
@@ -85,25 +82,3 @@ Biomes:
 The planets should have varying biomes that offer varying resources (and perhaps challenges).
 Biomes are determined on planet generation.
 Plan A:
-
-New villager work system for automators:
-
-Occupable Component:
-- selected: bool
-- workers_nb: u32
-- max_workers: u32
-- work_type: OccupableType
-Is used by the counters to know what to display.
-The counters send occupancy changes through events that hold the Entity and the changes
-
-Automator:
-- exploited_resource_type: ResourceType
-- range: f32
-
-Resource:
-- resource_type: ResourceType
-
-VillagerWorking:
-pub current_occupable: Entity,
-pub work_type: WorkType (the different)
-pub production_interval: f32,
