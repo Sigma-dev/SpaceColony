@@ -73,16 +73,17 @@ pub struct PlanetMaterial {
     settings: PlanetSettings,
 }
 
-#[derive(ShaderType, Debug, Clone)]
-struct PlanetSettings {
-    hole_array: [Vec4; 8],
-}
-
 impl Material2d for PlanetMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/planet.wgsl".into()
     }
 }
+
+#[derive(ShaderType, Debug, Clone)]
+struct PlanetSettings {
+    hole_array: [Vec4; 8],
+}
+
 
 fn update_water(
     mut planets: Query<(Entity, &Handle<PlanetMaterial>), With<Planet>>,

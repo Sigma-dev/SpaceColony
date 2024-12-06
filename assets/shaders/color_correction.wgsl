@@ -17,10 +17,22 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let sampled = textureSample(screen_texture, texture_sampler, in.uv);
     let white = settings.white_color;
     let black = settings.black_color;
-    if (sampled.r == 1.0 && sampled.g == 1.0 && sampled.g == 1.0) {
+    let whiteness = (sampled.r + sampled.g + sampled.b) / 3.;
+    /* 
+    if (sampled.r == 1.0 && sampled.g == 1.0 && sampled.b == 1.0) {
         return vec4<f32>(white.r, white.g, white.b, sampled.a);
     }
     else {
         return vec4<f32>(black.r, black.g, black.b, sampled.a);
     }
+    if (sampled.r == 0.0 && sampled.g == 0.0 && sampled.b == 0.0) {
+        return vec4<f32>(black.r, black.g, black.b, sampled.a);
+    }
+    else {
+        return vec4<f32>(white.r, white.g, white.b, sampled.a);
+    }
+    */
+    //return vec4<f32>(white.r, white.g, white.b, sampled.a);
+    let v3 = mix(black, white, whiteness);
+    return vec4<f32>(v3.r, v3.g, v3.b, 1.0);
 }

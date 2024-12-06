@@ -12,10 +12,6 @@ Maybe remove the Option from the planet from planet_stickers, meaningless and ve
 
 --
 
-Player should be able to move the camera
-
---
-
 Fix radial vs absolute distances:
 Most gameplay distance measurements should be absolute rather than radial.
 Plan A: Look through most of difference/distance measurements and replace them with their arc_ equivalents
