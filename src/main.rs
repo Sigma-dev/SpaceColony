@@ -9,9 +9,9 @@ use background::BackgroundPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
 use blinking_sprite::BlinkingSpritePlugin;
 use color_correction::{PostProcessPlugin, PostProcessSettings};
-use iyes_perf_ui::{entries::{PerfUiBundle, PerfUiCompleteBundle}, prelude::PerfUiEntryFPS, ui::root::PerfUiRoot, PerfUiPlugin};
+use iyes_perf_ui::{prelude::PerfUiEntryFPS, ui::root::PerfUiRoot, PerfUiPlugin};
 use looping_float::LoopingFloat;
-use mouse_position::{MousePosition, MousePositionPlugin};
+use mouse_position::MousePositionPlugin;
 use natural_resource::{spawn_bush, spawn_tree, NaturalResourcePlugin};
 use noisy_bevy::NoisyShaderPlugin;
 use occupable::*;
@@ -32,7 +32,7 @@ mod scaling_sprite;
 mod color_correction;
 
 use bevy::{
-    prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
+    prelude::*, sprite::Material2dPlugin, window::PresentMode
 };
 use bevy_mod_picking::prelude::*;
 use planet::{NewPlanet, PlanetMaterial, PlanetWater, Planets};
@@ -40,7 +40,7 @@ use planet_placing::CircleMaterial;
 use planet_sticker::PlanetSticker;
 use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
-use scaling_sprite::{ScalingSprite, ScalingSpritePlugin};
+use scaling_sprite::ScalingSpritePlugin;
 use ui::CustomUiPlugin;
 
 fn main() {
@@ -88,9 +88,8 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<ColorMaterial>>,
     mut planets: ResMut<Planets>,
-    mut planet_materials: ResMut<Assets<PlanetMaterial>>,
+    planet_materials: ResMut<Assets<PlanetMaterial>>,
 ) {
     commands.spawn((PerfUiRoot::default(),
     PerfUiEntryFPS::default(),));

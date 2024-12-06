@@ -1,6 +1,6 @@
 use std::{f32::INFINITY, time::Duration};
 
-use bevy::{math::VectorSpace, prelude::*, time::common_conditions::on_timer};
+use bevy::{prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 
 use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{Contains, EdgeDistanceTo, IsCollidingWith, PlanetSticker}, scaling_sprite::ScalingSprite, spawn_occupable, NewOccupable, Occupable, OccupableBundle, OccupableType, ResourceType};
@@ -34,11 +34,11 @@ fn determine_biome(planet: Entity, pos: f32, waters_query: &Query<&PlanetSticker
             return Some(Biome::Water);
         }
         let dist = water.edge_distance_to(pos);
-        if (dist < closest) {
+        if dist < closest {
             closest = dist;
         }
     }
-    if (closest < 16.) {
+    if closest < 16. {
         return Some(Biome::Swamp);
     }
     return Some(Biome::Ground);
@@ -47,11 +47,11 @@ fn determine_biome(planet: Entity, pos: f32, waters_query: &Query<&PlanetSticker
 fn handle_spawning_resources(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    planets_query: Query<(Entity, &Planet)>,
+    planets_query: Query<Entity, With<Planet>>,
     waters_query: Query<&PlanetSticker, With<PlanetWater>>,
     stickers_query: Query<&PlanetSticker, Without<PlanetWater>>
 ) {
-    for (planet_entity, planet) in planets_query.iter() {
+    for planet_entity in planets_query.iter() {
         let pos = rand::thread_rng().gen_range(0.0..360.0);
         let Some(biome) = determine_biome(planet_entity, pos, &waters_query) else { continue; };
         let mut found = false;
@@ -75,11 +75,11 @@ fn handle_natural_resources (
     mut natural_resource_query: Query<(Entity, &NaturalResource, &Transform, &mut ScalingSprite)>
 ) {
     for (natural_resource_entity, natural_resource, transform, mut scaling) in natural_resource_query.iter_mut() {
-        if (natural_resource.amount_remaining <= 0) {
+        if natural_resource.amount_remaining <= 0 {
             scaling.target_scale = Vec3::ZERO;
             commands.entity(natural_resource_entity).despawn_descendants();
-            commands.entity(natural_resource_entity).remove::<(Occupable)>();
-            if (transform.scale == Vec3::ZERO) {
+            commands.entity(natural_resource_entity).remove::<Occupable>();
+            if transform.scale == Vec3::ZERO {
                 commands.entity(natural_resource_entity).despawn();
             }
         }
@@ -110,7 +110,6 @@ pub fn spawn_tree(
             planet,
             position_degrees,
             OccupableType::Cutting,
-            ResourceType::Wood,
             1,
             8.,
             bevy::sprite::Anchor::BottomCenter
@@ -133,7 +132,6 @@ pub fn spawn_bush(
             planet,
             position_degrees,
             OccupableType::Foraging,
-            ResourceType::Food,
             1,
             8.,
             bevy::sprite::Anchor::BottomCenter
@@ -156,7 +154,6 @@ pub fn spawn_fish(
             planet,
             position_degrees,
             OccupableType::Fishing,
-            ResourceType::Food,
             1,
             8.,
             bevy::sprite::Anchor::Custom(Vec2::new(0., 1.))

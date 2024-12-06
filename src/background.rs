@@ -1,4 +1,4 @@
-use bevy::{app::*, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}, utils::*};
+use bevy::{app::*, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}};
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct StarsMaterial {

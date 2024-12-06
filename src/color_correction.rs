@@ -1,16 +1,15 @@
 use bevy::{
     core_pipeline::{
-        core_2d::graph::{Core2d, Node2d}, core_3d::graph::{Core3d, Node3d}, fullscreen_vertex_shader::fullscreen_shader_vertex_state
+        core_2d::graph::{Core2d, Node2d}, fullscreen_vertex_shader::fullscreen_shader_vertex_state
     },
     ecs::query::QueryItem,
     prelude::*,
     render::{
         extract_component::{
-            ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
-            UniformComponentPlugin,
+            ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin
         },
         render_graph::{
-            NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner,
+            NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner
         },
         render_resource::{
             binding_types::{sampler, texture_2d, uniform_buffer},
@@ -31,8 +30,7 @@ impl Plugin for PostProcessPlugin {
             // It's important to derive [`ExtractComponent`] on [`PostProcessingSettings`]
             ExtractComponentPlugin::<PostProcessSettings>::default(),
             UniformComponentPlugin::<PostProcessSettings>::default(),
-        ))
-        .add_systems(Update, (update_settings));
+        ));
 
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
             return;
@@ -189,13 +187,4 @@ impl FromWorld for PostProcessPipeline {
 pub struct PostProcessSettings {
     pub white_color: Vec3,
     pub black_color: Vec3,
-    // WebGL2 structs must be 16 byte aligned.
-    #[cfg(feature = "webgl2")]
-    _webgl2_padding: Vec3,
-}
-
-fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time>) {
-    for mut setting in &mut settings {
-
-    }
 }

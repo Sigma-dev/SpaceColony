@@ -2,7 +2,7 @@ use approx::AbsDiffEq;
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{Anchor, Material2d, MaterialMesh2dBundle, Mesh2dHandle}
 };
-use crate::{blinking_sprite::BlinkingSprite, looping_float::{LoopingFloat}, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_building, natural_resource::NaturalResource, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, looping_float::LoopingFloat, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_building, natural_resource::NaturalResource, ResourceType};
 
 #[derive(Component)]
 pub struct PlanetPlacingGhost;
@@ -91,7 +91,7 @@ fn spawn_ghost(
 }
 
 fn handle_circle(
-    circle_query: Query<(&Handle<CircleMaterial>)>,
+    circle_query: Query<&Handle<CircleMaterial>>,
     planet_placing: Res<PlanetPlacing>,
     mut circle_materials: ResMut<Assets<CircleMaterial>>,
 ) {
@@ -155,7 +155,7 @@ fn handle_ghost(
             ghost_sticker.planet = Some(planet_entity);
             ghost_sticker.position_degrees = LoopingFloat::new(angle);
             ghost_sprite.anchor = Anchor::BottomCenter;
-            let colliding = check_planet_collisions(ghost_sticker.as_ref(), planet_entity, &stickers_query);
+            let colliding = check_planet_collisions(ghost_sticker.as_ref(), &stickers_query);
             if colliding {
                 ghost_sprite.color.set_alpha(0.1);
             } else {
@@ -192,7 +192,7 @@ fn find_closest_surface(pos: Vec2, planets: &Vec<Entity>, planets_query: &Query<
     return best;
 }
 
-fn check_planet_collisions(sticker: &PlanetSticker, planet_entity: Entity, stickers_query: &Query<&PlanetSticker, Without<PlanetPlacingGhost>>) -> bool{
+fn check_planet_collisions(sticker: &PlanetSticker, stickers_query: &Query<&PlanetSticker, Without<PlanetPlacingGhost>>) -> bool{
     for other_sticker in stickers_query.iter() {
         if sticker.is_colliding_with(other_sticker) {
             return true

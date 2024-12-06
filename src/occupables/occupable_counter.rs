@@ -1,4 +1,4 @@
-use crate::{occupables::*, planet::PlanetWater, planet_sticker::{self, PlanetSticker}, planet_villager::{self, count_occupiers, count_workers, PlanetVillager, VillagerWandering, VillagerWorking}, Occupable};
+use crate::{occupables::*, planet::PlanetWater, planet_sticker::{self, PlanetSticker}, planet_villager::{self, count_occupiers, count_workers, VillagerWandering, VillagerWorking}, Occupable};
 use bevy::prelude::*;
 use occupable::OccupancyChange;
 
@@ -17,7 +17,7 @@ impl Plugin for OccupableCounterPlugin {
     }
 }
 
-fn handle_events(
+fn _handle_events(
     mut counters_query: Query<(&mut TextureAtlas, &Parent, &mut OccupableCounter)>,
     occupables_query: Query<&occupable::Occupable>,
     worker_query: Query<&VillagerWorking>,
@@ -39,12 +39,11 @@ fn handle_events(
 
 fn handle_count(
     mut counters_query: Query<(&mut TextureAtlas, &Parent, &mut OccupableCounter)>,
-    occupables_query: Query<(Entity, &occupable::Occupable)>,
+    occupables_query: Query<Entity, With<occupable::Occupable>>,
     worker_query: Query<&VillagerWorking>,
 ) {
     for (mut atlas, parent, mut counter) in counters_query.iter_mut() {
-        if let Ok((occupable_entity, occupable)) = occupables_query.get(parent.get()) {
-            //counter.count += ev.change;
+        if let Ok(occupable_entity) = occupables_query.get(parent.get()) {
             let count = count_workers(&worker_query, occupable_entity);
             counter.count = count as i32;
             atlas.index = counter.count as usize;

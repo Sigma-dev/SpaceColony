@@ -1,6 +1,6 @@
-use bevy::{app::*, prelude::*, utils::*};
+use bevy::{app::*, prelude::*};
 
-use crate::{planet::Planets, planet_sticker::PlanetSticker, planet_villager::{spawn_villager, PlanetVillager, VillagerWandering}, resources::Resources, ResourceType};
+use crate::{planet::Planets, planet_sticker::PlanetSticker, planet_villager::{spawn_villager, PlanetVillager}, resources::Resources, ResourceType};
 
 pub struct VillagerSpawnPlugin;
 
@@ -24,8 +24,8 @@ fn handle_spawn(
         resources.stored.insert(*index, current_value - cap as i32);
         if let Some(main_planet) = planets.main {
             let mut pos = 0.;
-            for (villager) in villagers_query.iter() {
-                if (villager.planet != planets.main) { continue; }
+            for villager in villagers_query.iter() {
+                if villager.planet != planets.main { continue; }
                 pos = villager.position_degrees.to_f32();
             }
             spawn_villager(

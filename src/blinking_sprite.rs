@@ -1,6 +1,4 @@
-use bevy::{
-    prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
-};
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct BlinkingSprite {
@@ -24,7 +22,7 @@ fn handle_blinking(
     time: Res<Time>,
 ) {
     for (mut sprite, blinking) in blinking_query.iter_mut() {
-        if (blinking.enabled == true) { 
+        if blinking.enabled == true { 
             sprite.color.set_alpha(pos_sin(time.elapsed_seconds() * 10.))
         } else {
             sprite.color.set_alpha(1.);

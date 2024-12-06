@@ -1,6 +1,6 @@
-use bevy::{
-    math::VectorSpace, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PresentMode
-};
+use bevy::
+    prelude::*
+;
 
 #[derive(Component)]
 pub struct ScalingSprite {
@@ -13,10 +13,6 @@ impl Plugin for ScalingSpritePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, handle_scaling);
     }
-}
-
-fn pos_sin(x: f32) -> f32 {
-    return (x.sin() + 1.) / 2.0;
 }
 
 fn handle_scaling(

@@ -1,10 +1,8 @@
-use std::process::Child;
-
-use bevy::{math::VectorSpace, prelude::*, sprite::Anchor};
+use bevy::{prelude::*, sprite::Anchor};
 use bevy_mod_picking::prelude::*;
 
 use crate::{
-    blinking_sprite::BlinkingSprite, button_value, looping_float::LoopingFloat, natural_resource::NaturalResource, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, resources, scaling_sprite::ScalingSprite
+    button_value, looping_float::LoopingFloat, natural_resource::NaturalResource, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, scaling_sprite::ScalingSprite
 };
 
 #[derive(Resource, Default)]
@@ -59,7 +57,6 @@ pub trait NewOccupable {
         planet: Entity,
         position_degrees: f32,
         occupable_type: OccupableType,
-        produced_resource: ResourceType,
         max_workers: u32,
         size_degrees: f32,
         offset: Anchor,
@@ -72,7 +69,6 @@ impl NewOccupable for OccupableBundle {
         planet: Entity,
         position_degrees: f32,
         occupable_type: OccupableType,
-        produced_resource: ResourceType,
         max_workers: u32,
         size_degrees: f32,
         anchor: Anchor,
@@ -259,14 +255,14 @@ fn find_and_assign_villagers(
     mut ev_occupancy: EventReader<OccupancyChange>,
     mut wandering_query: Query<(Entity, &PlanetSticker), With<VillagerWandering>>,
     mut working_query: Query<(Entity, &VillagerWorking)>,
-    mut occupable_query: Query<(Entity, &mut Occupable, &PlanetSticker)>,
+    mut occupable_query: Query<(Entity, &PlanetSticker)>,
     mut commands: Commands,
 ) {
     for ev in ev_occupancy.read() {
         if ev.change == 1 {
             for (villager_entity, sticker) in wandering_query.iter_mut() {
-                if let Ok((_, mut occupable, occupable_sticker)) =
-                    occupable_query.get_mut(ev.occupable)
+                if let Ok((_, occupable_sticker)) =
+                    occupable_query.get(ev.occupable)
                 {
                     if sticker.planet == occupable_sticker.planet {
                         commands
@@ -282,7 +278,7 @@ fn find_and_assign_villagers(
                 }
             }
         } else if ev.change == -1 {
-            if let Ok((occupable_entity, mut occupable, _)) = occupable_query.get_mut(ev.occupable) {
+            if let Ok((occupable_entity, _)) = occupable_query.get_mut(ev.occupable) {
                 for (worker_entity, worker) in working_query.iter_mut() {
                     if worker.current_occupable != occupable_entity { continue; };
                     commands
@@ -299,11 +295,11 @@ fn find_and_assign_villagers(
 
 fn handle_automators(
     planets_query: Query<&Planet>,
-    mut automator_query: Query<(Entity, &Automator, &mut Occupable, &PlanetSticker)>,
+    automator_query: Query<(Entity, &Automator, &Occupable, &PlanetSticker)>,
     mut natural_resource_query: Query<(Entity, &NaturalResource, &mut Occupable, &PlanetSticker), Without<Automator>>,
     mut villager_query: Query<(Entity, &mut VillagerWorking)>,
 ) {
-    for (automator_entity, automator, automator_occupable, automator_sticker) in automator_query.iter() {
+    for (automator_entity, automator, _automator_occupable, automator_sticker) in automator_query.iter() {
         let mut free: Vec<Entity> = vec![];
         for (villager_entity, villager) in villager_query.iter() {
             if villager.current_work == automator_entity {
@@ -325,7 +321,7 @@ fn handle_automators(
             let Ok(planet) = planets_query.get(planet_entity) else { continue; };
             let dist: f32 = automator_sticker.position_degrees.arc_distance(occupable_sticker.position_degrees.to_f32(), planet.radius);
             if dist > automator.range { continue; }
-            if (automator.exploited_resource != natural_resource.produced_resource) { continue; };
+            if automator.exploited_resource != natural_resource.produced_resource { continue; };
             let Some(villager_entity) = free.last() else { continue; };
             let Ok((_, mut villager)) = villager_query.get_mut(*villager_entity) else { continue; };
             villager.current_work = occupable_entity;
@@ -382,7 +378,6 @@ pub fn spawn_building(
             planet,
             position_degrees,
             OccupableType::Interior,
-            ResourceType::Wood,
             3,
             16.,
             Anchor::BottomCenter

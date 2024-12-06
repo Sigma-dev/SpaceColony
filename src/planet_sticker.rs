@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use bevy::prelude::*;
 
 use crate::looping_float::LoopingFloat;
@@ -26,7 +24,7 @@ impl IsCollidingWith for PlanetSticker {
         if planet != other_planet {
                 return false;
         }
-        if (size > other_size) {
+        if size > other_size {
             return self.is_colliding_with_pos(other.position_degrees.to_f32(), other_size)
         } else {
             return other.is_colliding_with_pos(self.position_degrees.to_f32(), size)
@@ -37,7 +35,6 @@ impl IsCollidingWith for PlanetSticker {
         let Some(size) = self.size_degrees else { return false };
         let left_self = self.position_degrees - size / 2.;
         let right_self = self.position_degrees + size / 2.;
-        let pos_self = Vec2::new((self.position_degrees - size / 2.).to_f32(), (self.position_degrees + size / 2.).to_f32());
         let pos_other = Vec2::new(other_pos - other_size / 2., other_pos + other_size / 2.);
         /* 
         if pos_self.x < pos_other.x && pos_self.y > pos_other.x {
@@ -47,10 +44,10 @@ impl IsCollidingWith for PlanetSticker {
             return true;
         }
         */
-        if (left_self.is_in_between(pos_other.x, right_self.to_f32(), true)) {
+        if left_self.is_in_between(pos_other.x, right_self.to_f32(), true) {
             return true;
         }
-        if (left_self.is_in_between(pos_other.y, right_self.to_f32(), true)) {
+        if left_self.is_in_between(pos_other.y, right_self.to_f32(), true) {
             return true;
         }
         return false;

@@ -1,4 +1,4 @@
-use bevy::{app::{App, Plugin, Startup, Update}, math::Vec2, prelude::{Query, ResMut, Resource, With}, render::camera::{self, Camera}, transform::components::{GlobalTransform, Transform}, window::Window};
+use bevy::{app::{App, Plugin, Update}, math::Vec2, prelude::{Query, ResMut, Resource}, render::camera::Camera, transform::components::GlobalTransform, window::Window};
 
 #[derive(Resource, Default)]
 pub struct MousePosition {

@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy_mod_picking::prelude::Pickable;
 
 use crate::looping_float::LoopingFloat;
-use crate::occupable::{self, Occupable, OccupableType};
-use crate::planet::{self, Planet, PlanetWater};
+use crate::occupable::{Occupable, OccupableType};
+use crate::planet::PlanetWater;
 use crate::planet_sticker::{self, PlanetSticker};
 use crate::resources::Resources;
 use crate::{spritesheet_animator, natural_resource::NaturalResource};
@@ -26,17 +26,6 @@ pub struct VillagerWorking {
     pub current_occupable: Entity,
     pub current_work: Entity,
     pub production_interval: f32,
-}
-
-pub trait Worker {
-    fn put_to_work(&mut self, villager_entity: Entity, occupable: &mut Occupable, occupable_entity: Entity);
-}
-
-impl Worker for VillagerWorking {
-    fn put_to_work(&mut self, villager_entity: Entity, occupable: &mut Occupable, occupable_entity: Entity) {
-        self.current_occupable = occupable_entity;
-       // occupable.workers.push(villager_entity);
-    }
 }
 
 #[derive(Component)]
@@ -84,7 +73,7 @@ fn handle_wandering_villagers(
         mut animator,
     ) in villager_query.iter_mut()
     {
-        let Some(planet_entity) = sticker.planet else {return;};
+        if sticker.planet.is_none() { return; }
         *visibility = Visibility::Visible;
         animator.current_animation_index = PlanetVillagerAnimationState::Idle as u32;
         if wandering.wait_time > 0. {
@@ -110,7 +99,7 @@ fn handle_wandering_villagers(
 }
 
 pub fn get_walk_dir(
-    mut villager_sticker: &PlanetSticker,
+    villager_sticker: &PlanetSticker,
     water_query: &Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     destination: LoopingFloat<360>
 ) -> Option<i32> {
@@ -152,9 +141,9 @@ fn is_obstructing(
     if (start.to_f32() > water_start.to_f32() && start.to_f32() < water_end.to_f32()) || (end > water_start.to_f32() && end < water_end.to_f32()) {
         return true;
     }
-    let mut a;
-    let mut b;
-    if (dir_bool) {
+    let a;
+    let b;
+    if dir_bool {
         a = start.is_in_between(water_start.to_f32(), end, dir_bool);
         b = start.is_in_between(water_end.to_f32(), end, dir_bool);
     } else {
@@ -209,7 +198,7 @@ fn handle_working_villagers(
     for (worker_entity, mut worker, sticker, mut visibility, sprite, mut animator) in
         villager_query.iter_mut()
     {
-        let Some(planet_entity) = sticker.planet else {return;};
+        if sticker.planet.is_none() { return; }
         *visibility = Visibility::Visible;
         if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_work) {
             let mut target = occupable_sticker.position_degrees;
@@ -251,7 +240,7 @@ fn handle_working_villagers(
                 }
             }
         } else {
-            if (worker.current_work == worker.current_occupable) {
+            if worker.current_work == worker.current_occupable {
                 commands
                             .entity(worker_entity)
                             .remove::<VillagerWorking>()
