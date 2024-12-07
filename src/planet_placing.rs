@@ -1,6 +1,6 @@
 use approx::AbsDiffEq;
 use bevy::{
-    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{Anchor, Material2d}
+    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}
 };
 use crate::{blinking_sprite::BlinkingSprite, looping_float::LoopingFloat, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_building, natural_resource::NaturalResource, ResourceType};
 
@@ -49,6 +49,10 @@ struct CircleSettings {
 impl Material2d for CircleMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/circle.wgsl".into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+         AlphaMode2d::Blend
     }
 }
 
