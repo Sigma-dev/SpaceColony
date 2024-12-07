@@ -3,7 +3,7 @@ use std::{f32::INFINITY, time::Duration};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 
-use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{Contains, EdgeDistanceTo, IsCollidingWith, PlanetSticker}, scaling_sprite::ScalingSprite, spawn_occupable, NewOccupable, Occupable, OccupableBundle, OccupableType, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{Contains, EdgeDistanceTo, IsCollidingWith, PlanetSticker}, scaling_sprite::ScalingSprite, spawn_occupable, Occupable, OccupableParameters, OccupableType, ResourceType};
 
 #[derive(Component, PartialEq)]
 pub struct NaturalResource {
@@ -86,14 +86,12 @@ fn handle_natural_resources (
     }
 }
 
-fn spawn_natural_resource(commands: &mut Commands, occupable_bundle: OccupableBundle, produced: ResourceType, amount: u32) {
-    let occupable = spawn_occupable(commands, occupable_bundle);
-    commands.entity(occupable).insert(
-        NaturalResource { produced_resource: produced, amount_remaining: amount }
-    );
-    commands.entity(occupable).insert(
+fn spawn_natural_resource(commands: &mut Commands, occupable_parameters: OccupableParameters, produced: ResourceType, amount: u32) {
+    let occupable = spawn_occupable(commands, occupable_parameters);
+    commands.entity(occupable).insert((
+        NaturalResource { produced_resource: produced, amount_remaining: amount },
         BlinkingSprite { enabled: false }
-    );
+    ));
 }
 
 
@@ -105,7 +103,7 @@ pub fn spawn_tree(
 ) {
     spawn_natural_resource(
         commands,
-        OccupableBundle::new(
+        OccupableParameters::new(
             asset_server.load("environment/tree.png"),
             planet,
             position_degrees,
@@ -127,7 +125,7 @@ pub fn spawn_bush(
 ) {
     spawn_natural_resource(
         commands,
-        OccupableBundle::new(
+        OccupableParameters::new(
             asset_server.load("environment/bush.png"),
             planet,
             position_degrees,
@@ -149,7 +147,7 @@ pub fn spawn_fish(
 ) {
     spawn_natural_resource(
         commands,
-        OccupableBundle::new(
+        OccupableParameters::new(
             asset_server.load("environment/fish.png"),
             planet,
             position_degrees,

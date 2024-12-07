@@ -16,7 +16,6 @@ use bevy::{
             *,
         },
         renderer::{RenderContext, RenderDevice},
-        texture::BevyDefault,
         view::ViewTarget,
         RenderApp,
     }, ui::graph::NodeUi,
@@ -173,6 +172,7 @@ impl FromWorld for PostProcessPipeline {
                 depth_stencil: None,
                 multisample: MultisampleState::default(),
                 push_constant_ranges: vec![],
+                zero_initialize_workgroup_memory: false,
             });
 
         Self {

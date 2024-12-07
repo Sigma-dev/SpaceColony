@@ -1,8 +1,15 @@
 use bevy::{prelude::*, sprite::Anchor};
-use bevy_mod_picking::prelude::*;
 
 use crate::{
-    button_value, looping_float::LoopingFloat, natural_resource::NaturalResource, occupable_counter::{self, OccupableCounter}, planet::Planet, planet_placing::{BuildingType, GetBuildingInfo}, planet_sticker::{self, PlanetSticker}, planet_villager::*, scaling_sprite::ScalingSprite
+    button_value,
+    looping_float::LoopingFloat,
+    natural_resource::NaturalResource,
+    occupable_counter::{self, OccupableCounter},
+    planet::Planet,
+    planet_placing::{BuildingType, GetBuildingInfo},
+    planet_sticker::{self, PlanetSticker},
+    planet_villager::*,
+    scaling_sprite::ScalingSprite,
 };
 
 #[derive(Resource, Default)]
@@ -11,7 +18,7 @@ pub struct SelectedOccupable {
 }
 
 #[derive(PartialEq)]
-pub enum  OccupableType {
+pub enum OccupableType {
     Cutting,
     Foraging,
     Fishing,
@@ -28,13 +35,13 @@ pub struct OccupancyChange {
 pub struct Occupable {
     pub selected: bool,
     pub max_workers: u32,
-    pub occupable_type: OccupableType
+    pub occupable_type: OccupableType,
 }
 
 #[derive(Component, PartialEq)]
 pub struct Automator {
     pub exploited_resource: ResourceType,
-    pub range: f32
+    pub range: f32,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -43,60 +50,26 @@ pub enum ResourceType {
     Wood,
 }
 
-#[derive(Bundle)]
-pub struct OccupableBundle {
-    sprite_bundle: SpriteBundle,
-    planet_sticker: PlanetSticker,
-    occupable: Occupable,
-    scaling: ScalingSprite,
+pub struct OccupableParameters {
+    texture: Handle<Image>,
+    planet: Entity,
+    position_degrees: f32,
+    occupable_type: OccupableType,
+    max_workers: u32,
+    size_degrees: f32,
+    anchor: Anchor,
 }
 
-pub trait NewOccupable {
-    fn new(
-        texture: Handle<Image>,
-        planet: Entity,
-        position_degrees: f32,
-        occupable_type: OccupableType,
-        max_workers: u32,
-        size_degrees: f32,
-        offset: Anchor,
-    ) -> Self;
-}
-
-impl NewOccupable for OccupableBundle {
-    fn new(
-        texture: Handle<Image>,
-        planet: Entity,
-        position_degrees: f32,
-        occupable_type: OccupableType,
-        max_workers: u32,
-        size_degrees: f32,
-        anchor: Anchor,
-    ) -> Self {
-        Self {
-            sprite_bundle: SpriteBundle {
-                sprite: Sprite {
-                    anchor,
-                    ..default()
-                },
-                transform: Transform {
-                    scale: Vec3::ZERO,
-                    ..default()
-                },
-                texture,
-                ..default()
-            },
-            planet_sticker: planet_sticker::PlanetSticker {
-                planet: Some(planet),
-                position_degrees: LoopingFloat::new(position_degrees),
-                size_degrees: Some(size_degrees),
-            },
-            occupable: Occupable {
-                occupable_type,
-                selected: false,
-                max_workers,
-            },
-            scaling: ScalingSprite { target_scale: Vec3::ONE }
+impl OccupableParameters {
+    pub fn new(texture: Handle<Image>, planet: Entity, position_degrees: f32, occupable_type: OccupableType, max_workers: u32, size_degrees: f32, anchor: Anchor) -> OccupableParameters {
+        OccupableParameters {
+            texture,
+            planet,
+            position_degrees,
+            occupable_type,
+            max_workers,
+            size_degrees,
+            anchor
         }
     }
 }
@@ -153,16 +126,9 @@ fn spawn_symbol(
     index: i32,
     offset: Vec3,
 ) -> Entity {
-    return commands
-        .spawn((
-            SpriteBundle {
-                texture: asset_server.load("ui/symbols.png"),
-                transform: Transform {
-                    translation: offset,
-                    ..Default::default()
-                },
-                ..default()
-            },
+    return commands.spawn((
+        Sprite::from_atlas_image(
+            asset_server.load("ui/symbols.png"),
             TextureAtlas {
                 layout: texture_atlas_layouts.add(TextureAtlasLayout::from_grid(
                     UVec2::new(8, 8),
@@ -173,9 +139,10 @@ fn spawn_symbol(
                 )),
                 index: index as usize,
             },
-            Name::new("Symbol")
-        ))
-        .id();
+        ),
+        Transform::from_translation(offset),
+        Name::new("Symbol")
+    )).id();
 }
 
 fn spawn_counter(
@@ -224,13 +191,13 @@ fn spawn_button(
     });
     commands
         .entity(button)
-        .insert(On::<Pointer<Click>>::run(change_value));
+        .observe(change_value);
     return button;
 }
 
 fn change_value(
+    event: Trigger<Pointer<Click>>,
     mut ev_occupancy: EventWriter<OccupancyChange>,
-    event: Listener<Pointer<Click>>,
     button_query: Query<(&button_value::Buttonvalue, &Parent)>,
     counter_query: Query<&Parent, With<OccupableCounter>>,
     occupable_query: Query<Entity, With<Occupable>>,
@@ -261,9 +228,7 @@ fn find_and_assign_villagers(
     for ev in ev_occupancy.read() {
         if ev.change == 1 {
             for (villager_entity, sticker) in wandering_query.iter_mut() {
-                if let Ok((_, occupable_sticker)) =
-                    occupable_query.get(ev.occupable)
-                {
+                if let Ok((_, occupable_sticker)) = occupable_query.get(ev.occupable) {
                     if sticker.planet == occupable_sticker.planet {
                         commands
                             .entity(villager_entity)
@@ -280,7 +245,9 @@ fn find_and_assign_villagers(
         } else if ev.change == -1 {
             if let Ok((occupable_entity, _)) = occupable_query.get_mut(ev.occupable) {
                 for (worker_entity, worker) in working_query.iter_mut() {
-                    if worker.current_occupable != occupable_entity { continue; };
+                    if worker.current_occupable != occupable_entity {
+                        continue;
+                    };
                     commands
                         .entity(worker_entity)
                         .remove::<VillagerWorking>()
@@ -292,42 +259,67 @@ fn find_and_assign_villagers(
     }
 }
 
-
 fn handle_automators(
     planets_query: Query<&Planet>,
     automator_query: Query<(Entity, &Automator, &Occupable, &PlanetSticker)>,
-    mut natural_resource_query: Query<(Entity, &NaturalResource, &mut Occupable, &PlanetSticker), Without<Automator>>,
+    mut natural_resource_query: Query<
+        (Entity, &NaturalResource, &mut Occupable, &PlanetSticker),
+        Without<Automator>,
+    >,
     mut villager_query: Query<(Entity, &mut VillagerWorking)>,
 ) {
-    for (automator_entity, automator, _automator_occupable, automator_sticker) in automator_query.iter() {
+    for (automator_entity, automator, _automator_occupable, automator_sticker) in
+        automator_query.iter()
+    {
         let mut free: Vec<Entity> = vec![];
         for (villager_entity, villager) in villager_query.iter() {
             if villager.current_work == automator_entity {
                 free.push(villager_entity);
-            }   
+            }
         }
-        for (occupable_entity, natural_resource, occupable, occupable_sticker) in natural_resource_query.iter_mut() {
-            if free.is_empty() { continue; }
-            if automator_entity == occupable_entity { continue; }
+        for (occupable_entity, natural_resource, occupable, occupable_sticker) in
+            natural_resource_query.iter_mut()
+        {
+            if free.is_empty() {
+                continue;
+            }
+            if automator_entity == occupable_entity {
+                continue;
+            }
             let mut count = 0;
-            
+
             for (_, villager) in villager_query.iter() {
                 if villager.current_work == occupable_entity {
                     count += 1;
-                }   
+                }
             }
-            if count == occupable.max_workers { continue; };
-            let Some(planet_entity) = automator_sticker.planet else { continue; };
-            let Ok(planet) = planets_query.get(planet_entity) else { continue; };
-            let dist: f32 = automator_sticker.position_degrees.arc_distance(occupable_sticker.position_degrees.to_f32(), planet.radius);
-            if dist > automator.range { continue; }
-            if automator.exploited_resource != natural_resource.produced_resource { continue; };
-            let Some(villager_entity) = free.last() else { continue; };
-            let Ok((_, mut villager)) = villager_query.get_mut(*villager_entity) else { continue; };
+            if count == occupable.max_workers {
+                continue;
+            };
+            let Some(planet_entity) = automator_sticker.planet else {
+                continue;
+            };
+            let Ok(planet) = planets_query.get(planet_entity) else {
+                continue;
+            };
+            let dist: f32 = automator_sticker
+                .position_degrees
+                .arc_distance(occupable_sticker.position_degrees.to_f32(), planet.radius);
+            if dist > automator.range {
+                continue;
+            }
+            if automator.exploited_resource != natural_resource.produced_resource {
+                continue;
+            };
+            let Some(villager_entity) = free.last() else {
+                continue;
+            };
+            let Ok((_, mut villager)) = villager_query.get_mut(*villager_entity) else {
+                continue;
+            };
             villager.current_work = occupable_entity;
             free.pop();
         }
-        
     }
 }
 
@@ -343,21 +335,49 @@ fn select_entity_system(
     }
 }
 
-pub fn spawn_occupable(commands: &mut Commands, occupable: OccupableBundle) -> Entity {
-    return commands.spawn((
-        occupable,
-        On::<Pointer<Click>>::target_component_mut::<Occupable>(|_, occupable| {
-            occupable.selected = true
-        }),
-        Name::new("Occupable")
+pub fn spawn_occupable(commands: &mut Commands, occupable: OccupableParameters) -> Entity {
+    let created = commands.spawn((
+        Sprite {
+            image: occupable.texture,
+            anchor: occupable.anchor,
+            ..default()
+        },
+        Transform {
+            scale: Vec3::ZERO,
+            ..default()
+        },
+        planet_sticker::PlanetSticker {
+            planet: Some(occupable.planet),
+            position_degrees: LoopingFloat::new(occupable.position_degrees),
+            size_degrees: Some(occupable.size_degrees),
+        },
+        Occupable {
+            occupable_type: occupable.occupable_type,
+            selected: false,
+            max_workers: occupable.max_workers,
+        },
+        ScalingSprite {
+            target_scale: Vec3::ONE,
+        },
+        Name::new("Occupable"),
     )).id();
+    commands.entity(created).observe(|trigger: Trigger<Pointer<Click>>, mut occupables: Query<&mut Occupable> | 
+        occupables.get_mut(trigger.entity()).unwrap().selected = true
+    );
+    created
 }
 
-fn spawn_automator(commands: &mut Commands, occupable_bundle: OccupableBundle, range: f32, exploited_resource: ResourceType) {
-    let occupable = spawn_occupable(commands, occupable_bundle);
-    commands.entity(occupable).insert(
-        Automator { exploited_resource, range }
-    );
+fn spawn_automator(
+    commands: &mut Commands,
+    occupable_parameters: OccupableParameters,
+    range: f32,
+    exploited_resource: ResourceType,
+) {
+    let occupable = spawn_occupable(commands, occupable_parameters);
+    commands.entity(occupable).insert(Automator {
+        exploited_resource,
+        range,
+    });
 }
 
 pub fn spawn_building(
@@ -373,16 +393,16 @@ pub fn spawn_building(
     let info = building_type.get_building_info();
     spawn_automator(
         commands,
-        OccupableBundle::new(
+        OccupableParameters::new(
             asset_server.load(texture_path),
             planet,
             position_degrees,
             OccupableType::Interior,
             3,
             16.,
-            Anchor::BottomCenter
+            Anchor::BottomCenter,
         ),
         info.range,
-        info.exploited_resource
+        info.exploited_resource,
     );
 }

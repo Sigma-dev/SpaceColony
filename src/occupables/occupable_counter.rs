@@ -18,19 +18,19 @@ impl Plugin for OccupableCounterPlugin {
 }
 
 fn _handle_events(
-    mut counters_query: Query<(&mut TextureAtlas, &Parent, &mut OccupableCounter)>,
+    mut counters_query: Query<(&mut Sprite, &Parent, &mut OccupableCounter)>,
     occupables_query: Query<&occupable::Occupable>,
     worker_query: Query<&VillagerWorking>,
     mut ev_occupancy: EventReader<OccupancyChange>,
 ) {
     for ev in ev_occupancy.read() {
         if let Ok(_) = occupables_query.get(ev.occupable) {
-            for (mut atlas, parent, mut counter) in counters_query.iter_mut() {
+            for (mut sprite, parent, mut counter) in counters_query.iter_mut() {
                 if parent.get() == ev.occupable {
                     //counter.count += ev.change;
                     let count = count_workers(&worker_query, ev.occupable);
                     counter.count = count as i32;
-                    atlas.index = counter.count as usize;
+                    sprite.texture_atlas.as_mut().unwrap().index = counter.count as usize;
                 }
             }
         }
@@ -38,15 +38,15 @@ fn _handle_events(
 }
 
 fn handle_count(
-    mut counters_query: Query<(&mut TextureAtlas, &Parent, &mut OccupableCounter)>,
+    mut counters_query: Query<(&mut Sprite, &Parent, &mut OccupableCounter)>,
     occupables_query: Query<Entity, With<occupable::Occupable>>,
     worker_query: Query<&VillagerWorking>,
 ) {
-    for (mut atlas, parent, mut counter) in counters_query.iter_mut() {
+    for (mut sprite, parent, mut counter) in counters_query.iter_mut() {
         if let Ok(occupable_entity) = occupables_query.get(parent.get()) {
             let count = count_workers(&worker_query, occupable_entity);
             counter.count = count as i32;
-            atlas.index = counter.count as usize;
+            sprite.texture_atlas.as_mut().unwrap().index = counter.count as usize;
         }
     }
 }

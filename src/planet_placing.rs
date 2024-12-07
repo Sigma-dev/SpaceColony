@@ -1,6 +1,6 @@
 use approx::AbsDiffEq;
 use bevy::{
-    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{Anchor, Material2d, MaterialMesh2dBundle, Mesh2dHandle}
+    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{Anchor, Material2d}
 };
 use crate::{blinking_sprite::BlinkingSprite, looping_float::LoopingFloat, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_building, natural_resource::NaturalResource, ResourceType};
 
@@ -67,37 +67,32 @@ fn spawn_ghost(
     mut meshes: ResMut<Assets<Mesh>>,
     mut circle_materials: ResMut<Assets<CircleMaterial>>,
 ) {
-    commands.spawn((SpriteBundle {
-        ..default()
-    },
-    PlanetPlacingGhost,
-    PlanetSticker {
-        size_degrees: Some(16.),
-        ..default()
-    },
-    Name::new("PlacingGhost")
+    commands.spawn((
+        Sprite::default(),
+        PlanetPlacingGhost,
+        PlanetSticker {
+            size_degrees: Some(16.),
+            ..default()
+        },
+        Name::new("PlacingGhost")
     )).with_children(|parent| {
         parent.spawn((
-            MaterialMesh2dBundle {
-                mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2::new(100., 100.)})),
-                material: circle_materials.add(CircleMaterial { settings: CircleSettings { 
-                    radius: 50.
-                }}),
-                ..default()
-            },
+            Mesh2d(meshes.add(Rectangle { half_size: Vec2::new(100., 100.)})),
+            MeshMaterial2d(circle_materials.add(CircleMaterial { settings: CircleSettings { radius: 50. }})),
             Name::new("PlacingGhostCircle")
-        )); });
+        ));
+    });
     commands.insert_resource(PlanetPlacing { building_type: None })
 }
 
 fn handle_circle(
-    circle_query: Query<&Handle<CircleMaterial>>,
+    circle_query: Query<&MeshMaterial2d<CircleMaterial>>,
     planet_placing: Res<PlanetPlacing>,
     mut circle_materials: ResMut<Assets<CircleMaterial>>,
 ) {
     let Some(building_type) = &planet_placing.building_type else { return; };
     for handle in circle_query.iter() {
-        if let Some(material) = circle_materials.get_mut(handle) {
+        if let Some(material) = circle_materials.get_mut(handle.id()) {
             material.settings.radius = building_type.get_building_info().range;
         }
     }
@@ -133,11 +128,11 @@ fn handle_ghost(
     asset_server: Res<AssetServer>,
     planets: Res<Planets>,
     mut planet_placing: ResMut<PlanetPlacing>,
-    mut ghost_query: Query<(&mut Transform, &mut Handle<Image>, &mut Visibility, &mut PlanetSticker, &mut Sprite), With<PlanetPlacingGhost>>,
+    mut ghost_query: Query<(&mut Transform, &mut Visibility, &mut PlanetSticker, &mut Sprite), With<PlanetPlacingGhost>>,
     planets_query: Query<(Entity, &Planet, &GlobalTransform)>,
     stickers_query: Query<&PlanetSticker, Without<PlanetPlacingGhost>>,
 ) {
-    let (mut ghost_transform, mut ghost_image, mut ghost_visibility, mut ghost_sticker, mut ghost_sprite) = ghost_query.single_mut();
+    let (mut ghost_transform, mut ghost_visibility, mut ghost_sticker, mut ghost_sprite) = ghost_query.single_mut();
 
     if keys.just_pressed(KeyCode::Space) {
         planet_placing.building_type = Some(BuildingType::Sawmill);
@@ -150,7 +145,7 @@ fn handle_ghost(
         match building_type {
             BuildingType::Sawmill => image = asset_server.load("buildings/sawmill.png"),
         }
-        *ghost_image = image;
+        ghost_sprite.image = image;
         if let Some((planet_entity, angle)) = find_closest_surface(mouse_position.world_position, &planets.all, &planets_query, 20.) {
             ghost_sticker.planet = Some(planet_entity);
             ghost_sticker.position_degrees = LoopingFloat::new(angle);
@@ -184,7 +179,7 @@ fn find_closest_surface(pos: Vec2, planets: &Vec<Entity>, planets_query: &Query<
             if dist.abs_diff_eq(&planet.radius, threshold) {
                 let diff = pos - planet_pos_2d;
                 let up = planet_transform.up().xy();
-                let angle = diff.angle_between(up).to_degrees();
+                let angle = diff.angle_to(up).to_degrees();
                 best = Some((planet_entity, angle));
             }
         }

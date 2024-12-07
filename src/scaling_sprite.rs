@@ -20,7 +20,7 @@ fn handle_scaling(
     time: Res<Time>,
 ) {
     for (mut transform, scaling) in scaling_query.iter_mut() {
-        transform.scale = transform.scale.lerp(scaling.target_scale, 10. * time.delta_seconds());
+        transform.scale = transform.scale.lerp(scaling.target_scale, 10. * time.delta_secs());
         if scaling.target_scale == Vec3::ZERO && transform.scale.length() < 0.05 {
             transform.scale = Vec3::ZERO;
         }

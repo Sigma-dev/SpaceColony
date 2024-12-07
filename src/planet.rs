@@ -1,8 +1,7 @@
 
 use bevy::{
     prelude::*, 
-    render::render_resource::{AsBindGroup, ShaderRef, ShaderType},
-    sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}
+    render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{Material2d, Material2dPlugin},
 };
 
 use crate::planet_sticker::PlanetSticker;
@@ -16,44 +15,10 @@ pub struct Planet {
     pub radius: f32,
 }
 
-#[derive(Bundle)]
-pub struct PlanetBundle {
-    pub mesh: MaterialMesh2dBundle<PlanetMaterial>,
-    pub planet: Planet,
-}
-
 #[derive(Resource, Default)]
 pub struct Planets {
     pub main: Option<Entity>,
     pub all: Vec<Entity>,
-}
-
-pub trait NewPlanet {
-    fn new(
-        radius: f32,
-        meshes: &mut ResMut<Assets<Mesh>>,
-        planet_materials: ResMut<Assets<PlanetMaterial>>,
-    ) -> Self;
-}
-
-impl NewPlanet for PlanetBundle {
-    fn new(
-        radius: f32,
-        meshes: &mut ResMut<Assets<Mesh>>,
-        mut planet_materials: ResMut<Assets<PlanetMaterial>>,
-    ) -> Self {
-        Self {
-            mesh: MaterialMesh2dBundle {
-                mesh: Mesh2dHandle(meshes.add(Rectangle{half_size: Vec2::splat(radius)})),
-                material: planet_materials.add(PlanetMaterial { settings: PlanetSettings { 
-                    hole_array: [Vec4::splat(0.); 8]
-                }}),
-                transform: Transform::from_xyz(0.0, 0.0, -10.0),
-                ..default()
-            },
-            planet: Planet { radius: radius },
-        }
-    }
 }
 
 pub struct PlanetsPlugin;
@@ -69,7 +34,7 @@ impl Plugin for PlanetsPlugin {
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct PlanetMaterial {
     #[uniform(0)]
-    settings: PlanetSettings,
+    pub settings: PlanetSettings,
 }
 
 impl Material2d for PlanetMaterial {
@@ -79,18 +44,18 @@ impl Material2d for PlanetMaterial {
 }
 
 #[derive(ShaderType, Debug, Clone)]
-struct PlanetSettings {
-    hole_array: [Vec4; 8],
+pub struct PlanetSettings {
+    pub hole_array: [Vec4; 8],
 }
 
 
 fn update_water(
-    mut planets: Query<(Entity, &Handle<PlanetMaterial>), With<Planet>>,
+    mut planets: Query<(Entity, &MeshMaterial2d<PlanetMaterial>), With<Planet>>,
     waters_query: Query<&PlanetSticker, With<PlanetWater>>,
     mut materials: ResMut<Assets<PlanetMaterial>>,
 ) {
     for (planet, handle) in planets.iter_mut() {
-        if let Some(material) = materials.get_mut(handle) {
+        if let Some(material) = materials.get_mut(handle.id()) {
             let mut waters: [Vec4; 8] = [Vec4::splat(0.); 8];
             let mut index = 0;
             for water_sticker in waters_query.iter() {

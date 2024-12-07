@@ -46,7 +46,7 @@ fn handle_animators(mut animators: Query<&mut SpritesheetAnimator>, time: Res<Ti
             animator.current_frame_index += 1;
             animator.current_frame_time = 0.;
         }
-        animator.current_frame_time += time.delta_seconds();
+        animator.current_frame_time += time.delta_secs();
         animator.last_animation_index = animator.current_animation_index;
     }
 }

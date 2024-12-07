@@ -12,6 +12,11 @@ Maybe remove the Option from the planet from planet_stickers, meaningless and ve
 
 --
 
+Small Tweaks (LIST):
+- For the building placement ghost, make it always faded out UNLESS it can actually be placed
+
+--
+
 Fix radial vs absolute distances:
 Most gameplay distance measurements should be absolute rather than radial.
 Plan A: Look through most of difference/distance measurements and replace them with their arc_ equivalents

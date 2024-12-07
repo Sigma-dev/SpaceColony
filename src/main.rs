@@ -9,7 +9,6 @@ use background::BackgroundPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
 use blinking_sprite::BlinkingSpritePlugin;
 use color_correction::{PostProcessPlugin, PostProcessSettings};
-use iyes_perf_ui::{prelude::PerfUiEntryFPS, ui::root::PerfUiRoot, PerfUiPlugin};
 use looping_float::LoopingFloat;
 use mouse_position::MousePositionPlugin;
 use natural_resource::{spawn_bush, spawn_tree, NaturalResourcePlugin};
@@ -34,8 +33,7 @@ mod color_correction;
 use bevy::{
     prelude::*, sprite::Material2dPlugin, window::PresentMode
 };
-use bevy_mod_picking::prelude::*;
-use planet::{NewPlanet, PlanetMaterial, PlanetWater, Planets};
+use planet::{PlanetMaterial, PlanetSettings, PlanetWater, Planets};
 use planet_placing::CircleMaterial;
 use planet_sticker::PlanetSticker;
 use planet_villager::spawn_villager;
@@ -76,11 +74,10 @@ fn main() {
         .add_plugins(NoisyShaderPlugin)
         .add_plugins(PostProcessPlugin)
         .add_plugins(PanCamPlugin::default())
-        .add_plugins((bevy::diagnostic::FrameTimeDiagnosticsPlugin, PerfUiPlugin))
-        .add_plugins((DefaultPickingPlugins, UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<CircleMaterial>::default()))
+        .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
+        .add_plugins((UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<CircleMaterial>::default()))
         .add_systems(Startup, setup)
         .add_event::<occupable::OccupancyChange>()
-        .insert_resource(Msaa::Off)
         .run();
 }
 
@@ -89,18 +86,15 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut planets: ResMut<Planets>,
-    planet_materials: ResMut<Assets<PlanetMaterial>>,
+    mut planet_materials: ResMut<Assets<PlanetMaterial>>,
 ) {
-    commands.spawn((PerfUiRoot::default(),
-    PerfUiEntryFPS::default(),));
-    commands.spawn((Camera2dBundle {
-            projection: OrthographicProjection {
-                far: 1000.,
-                near: -1000.,
-                scale: 0.4,
-                ..default()
-            },
-            ..default()
+    commands.spawn((
+        Camera2d,
+        OrthographicProjection {
+            far: 1000.,
+            near: -1000.,
+            scale: 0.4,
+            ..OrthographicProjection::default_2d()
         },
         PostProcessSettings {
             white_color: Vec3::new(1., 1., 1.),
@@ -110,12 +104,23 @@ fn setup(
             enabled: true,
             ..default()
         },
-        Name::new("Camera")
+        Name::new("Camera"),
+        Msaa::Off
     ));
 
-    let main_planet = commands
-        .spawn((planet::PlanetBundle::new(100., &mut meshes, planet_materials), Name::new("MainPlanet")))
-        .id();
+
+    let main_planet = commands.spawn((
+        Mesh2d(meshes.add(Rectangle{half_size: Vec2::splat(100.)})),
+        MeshMaterial2d(
+            planet_materials.add(PlanetMaterial { 
+                settings: PlanetSettings {
+                    hole_array: [Vec4::splat(0.); 8]
+                }
+            })),
+        Transform::from_xyz(0.0, 0.0, -10.0),
+        planet::Planet { radius: 100. },
+        Name::new("MainPlanet")
+    )).id();
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
     for tree_index in 0..1 {

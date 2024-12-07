@@ -1,4 +1,4 @@
-use bevy::{app::*, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle}};
+use bevy::{app::*, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::Material2d};
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct StarsMaterial {
@@ -29,17 +29,14 @@ fn spawn_background(
 ) {
     commands.spawn((
         Name::new("Background"),
-        MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
-            material: custom_materials.add(StarsMaterial { }),
-            transform: Transform {
-                translation: Vec3 { x: 0., y: 0., z: -100. },
-                ..default()
-            },
+        Mesh2d(meshes.add(Rectangle { half_size: Vec2 { x: 100., y: 100. } })),
+        MeshMaterial2d(custom_materials.add(StarsMaterial { })),
+        Transform {
+            translation: Vec3 { x: 0., y: 0., z: -100. },
             ..default()
         },
-    Background,)
-    );
+        Background
+    ));
 }
 
 fn handle_background(

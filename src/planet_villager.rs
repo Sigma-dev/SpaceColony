@@ -1,6 +1,4 @@
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::Pickable;
-
 use crate::looping_float::LoopingFloat;
 use crate::occupable::{Occupable, OccupableType};
 use crate::planet::PlanetWater;
@@ -77,7 +75,7 @@ fn handle_wandering_villagers(
         *visibility = Visibility::Visible;
         animator.current_animation_index = PlanetVillagerAnimationState::Idle as u32;
         if wandering.wait_time > 0. {
-            wandering.wait_time -= time.delta_seconds();
+            wandering.wait_time -= time.delta_secs();
             if wandering.wait_time <= 0. {
                 wandering.current_destination =
                     sticker.position_degrees + rand::thread_rng().gen_range(-20.0..20.0)
@@ -88,7 +86,7 @@ fn handle_wandering_villagers(
                 sticker,
                 sprite,
                 &water_query,
-                time.delta_seconds(),
+                time.delta_secs(),
                 wandering.current_destination,
                 7.,
             ) {
@@ -214,7 +212,7 @@ fn handle_working_villagers(
                 sticker,
                 sprite,
                 &water_query,
-                time.delta_seconds(),
+                time.delta_secs(),
                 target,
                 15.,
             ) {
@@ -226,7 +224,7 @@ fn handle_working_villagers(
                 };
                 animator.current_animation_index = anim as u32;
                 if let Ok(mut natural_resource) = natural_resource_query.get_mut(worker.current_work) {
-                    worker.production_interval -= time.delta_seconds();
+                    worker.production_interval -= time.delta_secs();
                     if worker.production_interval <= 0.0 {
                         let index = natural_resource.produced_resource as i32;
                         let current_value = resources.stored.get(&index).copied().unwrap_or(0);
@@ -254,16 +252,13 @@ fn handle_working_villagers(
 
 pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, planet: Entity, position_degrees: f32, name: String) {
     commands.spawn((
-        SpriteBundle {
-            texture: asset_server.load("player/player.png"),
-            sprite: Sprite {
-                anchor: bevy::sprite::Anchor::BottomCenter,
-                ..default()
-            },
-            transform: Transform {
-                translation: Vec3{ x: 0., y: 0., z: 10.},
-                ..default()
-            },
+        Sprite {
+            image: asset_server.load("player/player.png"),
+            anchor: bevy::sprite::Anchor::BottomCenter,
+            ..default()
+        },
+        Transform {
+            translation: Vec3{ x: 0., y: 0., z: 10.},
             ..default()
         },
         spritesheet_animator::SpritesheetAnimator::new(
@@ -279,7 +274,7 @@ pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, 
             _name: format!("{}", name),
         },
         VillagerWandering::default(),
-        Pickable::IGNORE,
+        PickingBehavior::IGNORE,
         Name::new("Villager")
     ));
 }
