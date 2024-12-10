@@ -4,10 +4,12 @@ use bevy::{
 };
 use crate::{mouse_position::MousePosition, planet::Planet, planet_queries::PlanetQueries, planet_sticker::{PlanetCollider, PlanetSticker}, ResourceType};
 
-#[derive(Component)]
-pub struct PlanetPlacingGhost;
+#[derive(Component, Debug)]
+pub struct PlanetPlacingGhost {
+    state: GhostState
+}
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum BuildingType {
     Sawmill = 32
 }
@@ -77,7 +79,7 @@ impl Plugin for PlanetPlacingPlugin {
         .insert_resource(BuildingSelection {buildings: vec![BuildingType::Sawmill]})
         .add_event::<ToggleBuilding>()
         .add_systems(Startup, spawn_ghost)
-        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost));
+        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost, compute_ghost_state));
     }
 }
 
@@ -145,7 +147,7 @@ fn spawn_ghost(
             anchor: Anchor::BottomCenter,
             ..default()
         },
-        PlanetPlacingGhost,
+        PlanetPlacingGhost { state: GhostState::Hidden },
         Name::new("PlacingGhost")
     )).with_children(|parent| {
         parent.spawn((
@@ -169,38 +171,82 @@ fn handle_circle(
     }
 }
 
-fn handle_ghost(
-    mut commands: Commands,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
+#[derive(Debug)]
+enum GhostState {
+    Hidden,
+    Detached(BuildingType, Vec2),
+    AttachedInvalid(BuildingType, Entity, f32),
+    AttachedValid(BuildingType, Entity, f32),
+}
+
+impl GhostState {
+    pub fn get_attached(&self) -> Option<(BuildingType, Entity, f32)> {
+        match self {
+            GhostState::Hidden | GhostState::Detached(_, _) => None,
+            GhostState::AttachedInvalid(b, e, p) => Some((*b, *e, *p)),
+            GhostState::AttachedValid(b, e, p) => Some((*b, *e, *p)),
+        }
+    }
+
+    pub fn get_visuals(&self) -> Option<(f32, BuildingType)> {
+        match self {
+            GhostState::Hidden => None,
+            GhostState::Detached(b, _) => Some((0.5, *b)),
+            GhostState::AttachedInvalid(b, _, _) => Some((0.5, *b)),
+            GhostState::AttachedValid(b, _, _) => Some((1., *b)),
+        }
+    }
+}
+
+fn compute_ghost_state(
+    planet_placing: ResMut<PlanetPlacing>,
+    mut ghost_query: Query<&mut PlanetPlacingGhost>,
     mouse_position: Res<MousePosition>,
-    mut planet_placing: ResMut<PlanetPlacing>,
-    mut ghost_query: Query<(Entity, &mut Transform, &mut Visibility, &mut Sprite, Option<&mut PlanetSticker>), (With<PlanetPlacingGhost>, Without<Planet>)>,
-    asset_server: Res<AssetServer>,
-    mut planet_queries: PlanetQueries
+    planet_queries: PlanetQueries
 ) {
-    let (ghost_entity, mut ghost_transform, mut ghost_visibility, mut ghost_sprite, maybe_ghost_sticker) = ghost_query.single_mut();
+    let mut ghost_state = ghost_query.single_mut();
+    let mouse_pos = mouse_position.world_position;
     
     if let Some(building_type) = planet_placing.building_type {
-        let building_info = building_type.get_building_info();
-        *ghost_visibility = Visibility::Visible;
-        if maybe_ghost_sticker.is_none() {
-            ghost_transform.translation = mouse_position.world_position.extend(0.);
-            ghost_transform.rotation = Quat::default();
-        }
-        ghost_sprite.image = asset_server.load(building_info.image_path);
-        if let Some(closest) = planet_queries.find_closest_surface(mouse_position.world_position) {
+        if let Some(closest) = planet_queries.find_closest_surface(mouse_pos) {
             if closest.distance < 20. {
-                commands.entity(ghost_entity).insert((
-                    PlanetSticker::new(closest.planet, closest.pos_degrees),
-                    PlanetCollider::new(building_info.size)
-                ));
+                ghost_state.state = GhostState::AttachedValid(building_type, closest.planet, closest.pos_degrees);
                 return;
             }
         }
+        ghost_state.state = GhostState::Detached(building_type, mouse_pos);
+    } else {
+        ghost_state.state = GhostState::Hidden;
+    }
+}
+
+fn handle_ghost(
+    mut commands: Commands,
+    mouse_position: Res<MousePosition>,
+    mut ghost_query: Query<(Entity, &mut Transform, &mut Visibility, &mut Sprite, &PlanetPlacingGhost)>,
+    asset_server: Res<AssetServer>,
+) {
+    let (ghost_entity, mut ghost_transform, mut ghost_visibility, mut ghost_sprite, ghost_state) = ghost_query.single_mut();
+    let state = &ghost_state.state;
+
+    if let Some((building_type, planet, pos)) = state.get_attached() {
+        commands.entity(ghost_entity).insert((
+            PlanetSticker::new(planet, pos),
+            PlanetCollider::new(building_type.get_building_info().size)
+        ));
+    } else {
+        commands.entity(ghost_entity).remove::<(PlanetSticker, PlanetCollider)>();
+        ghost_transform.translation = mouse_position.world_position.extend(0.);
+        ghost_transform.rotation = Quat::default();
+    }
+
+    if let Some((alpha, building_type)) = state.get_visuals() {
+        *ghost_visibility = Visibility::Visible;
+        ghost_sprite.color.set_alpha(alpha);
+        ghost_sprite.image = asset_server.load(building_type.get_building_info().image_path);
     } else {
         *ghost_visibility = Visibility::Hidden;
     }
-    commands.entity(ghost_entity).remove::<(PlanetSticker, PlanetCollider)>();
 } 
 
 /* fn blink_resource_in_range(
