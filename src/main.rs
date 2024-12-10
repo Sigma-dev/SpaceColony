@@ -29,13 +29,15 @@ mod blinking_sprite;
 mod natural_resource;
 mod scaling_sprite;
 mod color_correction;
+mod planet_queries;
 
 use bevy::{
-    prelude::*, sprite::Material2dPlugin, window::PresentMode
+    prelude::*, sprite::{Anchor, Material2dPlugin}, window::PresentMode
 };
 use planet::{PlanetMaterial, PlanetSettings, PlanetWater, Planets};
 use planet_placing::CircleMaterial;
-use planet_sticker::PlanetSticker;
+use planet_queries::PlanetQueries;
+use planet_sticker::{PlanetCollider, PlanetSticker};
 use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
 use scaling_sprite::ScalingSpritePlugin;
@@ -76,7 +78,7 @@ fn main() {
         .add_plugins(PanCamPlugin::default())
         .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
         .add_plugins((UiMaterialPlugin::<ui::ProgressBarMaterial>::default(), Material2dPlugin::<background::StarsMaterial>::default(), Material2dPlugin::<CircleMaterial>::default()))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, post_setup).chain())
         .add_event::<occupable::OccupancyChange>()
         .run();
 }
@@ -87,6 +89,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut planets: ResMut<Planets>,
     mut planet_materials: ResMut<Assets<PlanetMaterial>>,
+    mut planet_queries: PlanetQueries,
 ) {
     commands.spawn((
         Camera2d,
@@ -123,45 +126,42 @@ fn setup(
     )).id();
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
-    for tree_index in 0..1 {
-        spawn_tree(&mut commands, &asset_server, main_planet, tree_index as f32 * 180.);
-    }
-    for bush_index in 0..1 {
-        spawn_bush(&mut commands, &asset_server, main_planet, (bush_index + 1) as f32 * 33.)
-    }
-    for villager_index in 0..1 {
-        spawn_villager(&mut commands, &asset_server, main_planet, 30. + 45. * (villager_index as f32), villager_index.to_string())
-    }
-    commands.spawn({(
-        PlanetSticker {
-            planet: Some(main_planet),
-            position_degrees: LoopingFloat::new(67.5),
-            size_degrees: Some(45.)
-        },
-        PlanetWater{},
-        Name::new("Water")
-    )
-    });
     
-    /* 
-    commands.spawn({(
-        PlanetSticker {
-            planet: Some(main_planet),
-            position_degrees: LoopingFloat::new(200.),
-            size_degrees: Some(45.)
-        },
-        PlanetWater{},)
-    });
+}
 
-    commands.spawn({(
-        PlanetSticker {
-            planet: Some(main_planet),
-            position_degrees: LoopingFloat::new(270.),
-            size_degrees: Some(45.)
-        },
-        PlanetWater{},)
-    });
-    */
+fn post_setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    planets: ResMut<Planets>,
+    mut planet_queries: PlanetQueries,
+) {
+    let main_planet = planets.main.unwrap();
+    for _tree_index in 0..15 {
+        //spawn_tree(&mut commands, &asset_server, main_planet, tree_index as f32 * 180.);
+        place_trees_randomly(&mut commands, &asset_server, main_planet, &mut planet_queries);
+    }
+}
 
-     
+fn place_trees_randomly(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    planet: Entity,
+    planet_queries: &mut PlanetQueries,
+) {
+    let tree_size = 8.;
+    let Some(pos) = planet_queries.get_random_valid_placement(planet, tree_size, 10) else { return };
+    commands.spawn((
+        Sprite {
+            image: asset_server.load("environment/tree.png"),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+        PlanetSticker {
+            planet,
+            position_degrees: LoopingFloat::new(pos),
+        },
+        PlanetCollider {
+            size_degrees: tree_size
+        }
+    ));
 }

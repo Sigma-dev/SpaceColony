@@ -4,7 +4,7 @@ use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
 use num_traits::abs;
 
 
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
 pub struct LoopingFloat<const MAX: u32> {
     value: f32,
 }
@@ -79,7 +79,6 @@ impl<const MAX: u32> LoopingFloat<MAX> {
     }
 }
 
-// Operations with f32
 impl<const MAX: u32> Add<f32> for LoopingFloat<MAX> {
     type Output = Self;
 

@@ -3,7 +3,7 @@ use std::{f32::INFINITY, time::Duration};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 
-use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{Contains, EdgeDistanceTo, IsCollidingWith, PlanetSticker}, scaling_sprite::ScalingSprite, spawn_occupable, Occupable, OccupableParameters, OccupableType, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{PlanetSticker}, scaling_sprite::ScalingSprite, spawn_occupable, Occupable, OccupableParameters, OccupableType, ResourceType};
 
 #[derive(Component, PartialEq)]
 pub struct NaturalResource {
@@ -27,9 +27,8 @@ impl Plugin for NaturalResourcePlugin {
 }
 
 fn determine_biome(planet: Entity, pos: f32, waters_query: &Query<&PlanetSticker, With<PlanetWater>>) -> Option<Biome> {
-    let mut closest = INFINITY;
+    /* let mut closest = INFINITY;
     for water in waters_query.iter() {
-        if water.planet != Some(planet) { continue; };
         if water.contains(pos) {
             return Some(Biome::Water);
         }
@@ -41,7 +40,8 @@ fn determine_biome(planet: Entity, pos: f32, waters_query: &Query<&PlanetSticker
     if closest < 16. {
         return Some(Biome::Swamp);
     }
-    return Some(Biome::Ground);
+    return Some(Biome::Ground); */
+    None
 }
 
 fn handle_spawning_resources(
@@ -51,7 +51,7 @@ fn handle_spawning_resources(
     waters_query: Query<&PlanetSticker, With<PlanetWater>>,
     stickers_query: Query<&PlanetSticker, Without<PlanetWater>>
 ) {
-    for planet_entity in planets_query.iter() {
+    /* for planet_entity in planets_query.iter() {
         let pos = rand::thread_rng().gen_range(0.0..360.0);
         let Some(biome) = determine_biome(planet_entity, pos, &waters_query) else { continue; };
         let mut found = false;
@@ -67,7 +67,7 @@ fn handle_spawning_resources(
             Biome::Swamp => spawn_bush(&mut commands, &asset_server, planet_entity, pos),
             Biome::Ground => spawn_tree(&mut commands, &asset_server, planet_entity, pos),
         }
-    }
+    } */
 }
 
 fn handle_natural_resources (

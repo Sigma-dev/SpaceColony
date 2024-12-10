@@ -4,7 +4,7 @@ use bevy::{
     render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{Material2d, Material2dPlugin},
 };
 
-use crate::planet_sticker::PlanetSticker;
+use crate::planet_sticker::{PlanetCollider, PlanetSticker};
 
 #[derive(Component, PartialEq)]
 pub struct PlanetWater {
@@ -51,17 +51,16 @@ pub struct PlanetSettings {
 
 fn update_water(
     mut planets: Query<(Entity, &MeshMaterial2d<PlanetMaterial>), With<Planet>>,
-    waters_query: Query<&PlanetSticker, With<PlanetWater>>,
+    waters_query: Query<(&PlanetSticker, &PlanetCollider), With<PlanetWater>>,
     mut materials: ResMut<Assets<PlanetMaterial>>,
 ) {
     for (planet, handle) in planets.iter_mut() {
         if let Some(material) = materials.get_mut(handle.id()) {
             let mut waters: [Vec4; 8] = [Vec4::splat(0.); 8];
             let mut index = 0;
-            for water_sticker in waters_query.iter() {
-                let Some(water_planet) = water_sticker.planet else { continue; };
-                let Some(size) = water_sticker.size_degrees else { continue; };
-                if water_planet != planet {continue;};
+            for (water_sticker, water_collider) in waters_query.iter() {
+                let size = water_collider.size_degrees;
+                if water_sticker.planet != planet {continue;};
                 waters[index] = Vec4::new(water_sticker.position_degrees.to_f32() - size / 2., water_sticker.position_degrees.to_f32() + size / 2., 0., 0.);
                 index += 1;
                 if index == 8 {break;};

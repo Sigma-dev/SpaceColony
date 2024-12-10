@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use crate::looping_float::LoopingFloat;
 use crate::occupable::{Occupable, OccupableType};
 use crate::planet::PlanetWater;
-use crate::planet_sticker::{self, PlanetSticker};
+use crate::planet_sticker::{self, PlanetCollider, PlanetSticker};
 use crate::resources::Resources;
 use crate::{spritesheet_animator, natural_resource::NaturalResource};
 use rand::Rng;
@@ -60,7 +60,7 @@ fn handle_wandering_villagers(
         &mut Visibility,
         &mut spritesheet_animator::SpritesheetAnimator,
     )>,
-    water_query: Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
+    water_query: Query<(&PlanetSticker, &PlanetCollider), (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     time: Res<Time>,
 ) {
     for (
@@ -71,7 +71,6 @@ fn handle_wandering_villagers(
         mut animator,
     ) in villager_query.iter_mut()
     {
-        if sticker.planet.is_none() { return; }
         *visibility = Visibility::Visible;
         animator.current_animation_index = PlanetVillagerAnimationState::Idle as u32;
         if wandering.wait_time > 0. {
@@ -98,7 +97,7 @@ fn handle_wandering_villagers(
 
 pub fn get_walk_dir(
     villager_sticker: &PlanetSticker,
-    water_query: &Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
+    water_query: &Query<(&PlanetSticker, &PlanetCollider), (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     destination: LoopingFloat<360>
 ) -> Option<i32> {
     let shortest = villager_sticker.position_degrees.direction(destination.to_f32());
@@ -113,13 +112,13 @@ pub fn get_walk_dir(
 }
 
 fn is_path_free(
-    water_query: &Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
+    water_query: &Query<(&PlanetSticker, &PlanetCollider), (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     start: LoopingFloat<360>,
     end: f32,
     dir: i32,
 ) -> bool {
-    for water in water_query.iter() {
-        if is_obstructing(water, start, end, dir) {
+    for (water, water_collider) in water_query.iter() {
+        if is_obstructing(water, water_collider, start, end, dir) {
             return false;
         }
     }
@@ -128,12 +127,13 @@ fn is_path_free(
 
 fn is_obstructing(
     water: &PlanetSticker,
+    water_collider: &PlanetCollider,
     start: LoopingFloat<360>,
     end: f32,
     dir: i32,
 ) -> bool {
     let dir_bool = dir == 1;
-    let Some(water_size) = water.size_degrees else { return false; };
+    let water_size = water_collider.size_degrees;
     let water_start = water.position_degrees - water_size / 2.;
     let water_end = water.position_degrees  + water_size / 2.;
     if (start.to_f32() > water_start.to_f32() && start.to_f32() < water_end.to_f32()) || (end > water_start.to_f32() && end < water_end.to_f32()) {
@@ -160,7 +160,7 @@ fn walk_towards(
     animator: &mut spritesheet_animator::SpritesheetAnimator,
     mut sticker: Mut<PlanetSticker>,
     mut sprite: Mut<Sprite>,
-    water_query: &Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
+    water_query: &Query<(&PlanetSticker, &PlanetCollider), (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     elapsed_seconds: f32,
     destination: LoopingFloat<360>,
     speed: f32,
@@ -187,7 +187,7 @@ fn handle_working_villagers(
         &mut Sprite,
         &mut spritesheet_animator::SpritesheetAnimator,
     )>,
-    water_query: Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
+    water_query: Query<(&PlanetSticker, &PlanetCollider), (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
     occupable_query: Query<(&Occupable, &PlanetSticker), Without<VillagerWorking>>,
     mut natural_resource_query: Query<&mut NaturalResource>,
     time: Res<Time>,
@@ -196,7 +196,6 @@ fn handle_working_villagers(
     for (worker_entity, mut worker, sticker, mut visibility, sprite, mut animator) in
         villager_query.iter_mut()
     {
-        if sticker.planet.is_none() { return; }
         *visibility = Visibility::Visible;
         if let Ok((occupable, occupable_sticker)) = occupable_query.get(worker.current_work) {
             let mut target = occupable_sticker.position_degrees;
@@ -266,9 +265,8 @@ pub fn spawn_villager(commands: &mut Commands, asset_server: &Res<AssetServer>, 
             vec![vec![0.6; 2], vec![0.2; 2], vec![0.2; 4], vec![0.2; 2]],
         ),
         planet_sticker::PlanetSticker {
-            planet: Some(planet),
+            planet,
             position_degrees: LoopingFloat::new(position_degrees),
-            size_degrees: None
         },
         PlanetVillager {
             _name: format!("{}", name),

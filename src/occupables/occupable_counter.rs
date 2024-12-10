@@ -1,4 +1,4 @@
-use crate::{occupables::*, planet::PlanetWater, planet_sticker::{self, PlanetSticker}, planet_villager::{self, count_occupiers, count_workers, VillagerWandering, VillagerWorking}, Occupable};
+use crate::{occupables::*, planet::PlanetWater, planet_sticker::{self, PlanetCollider, PlanetSticker}, planet_villager::{self, count_occupiers, count_workers, VillagerWandering, VillagerWorking}, Occupable};
 use bevy::prelude::*;
 use occupable::OccupancyChange;
 
@@ -62,7 +62,7 @@ fn handle_counters(
     selected_occupable: Res<occupable::SelectedOccupable>,
     wandering_query: Query<&PlanetSticker, With<VillagerWandering>>,
     working_query: Query<&VillagerWorking>,
-    water_query: Query<&PlanetSticker, (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
+    water_query: Query<(&PlanetSticker, &PlanetCollider), (With<PlanetWater>, Without<Occupable>, Without<VillagerWorking>, Without<VillagerWandering>)>,
 ) {
     for (parent, counter, visibility) in counters_query.iter_mut() {
         if let Ok((occupable_entity, occupable, occupable_sticker)) = occupables_query.get(parent.get()) {

@@ -296,10 +296,7 @@ fn handle_automators(
             if count == occupable.max_workers {
                 continue;
             };
-            let Some(planet_entity) = automator_sticker.planet else {
-                continue;
-            };
-            let Ok(planet) = planets_query.get(planet_entity) else {
+            let Ok(planet) = planets_query.get(automator_sticker.planet) else {
                 continue;
             };
             let dist: f32 = automator_sticker
@@ -347,9 +344,11 @@ pub fn spawn_occupable(commands: &mut Commands, occupable: OccupableParameters) 
             ..default()
         },
         planet_sticker::PlanetSticker {
-            planet: Some(occupable.planet),
+            planet: occupable.planet,
             position_degrees: LoopingFloat::new(occupable.position_degrees),
-            size_degrees: Some(occupable.size_degrees),
+        },
+        planet_sticker::PlanetCollider {
+            size_degrees: occupable.size_degrees,
         },
         Occupable {
             occupable_type: occupable.occupable_type,

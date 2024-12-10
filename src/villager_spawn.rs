@@ -25,7 +25,7 @@ fn handle_spawn(
         if let Some(main_planet) = planets.main {
             let mut pos = 0.;
             for villager in villagers_query.iter() {
-                if villager.planet != planets.main { continue; }
+                if villager.planet != planets.main.unwrap() { continue; }
                 pos = villager.position_degrees.to_f32();
             }
             spawn_villager(

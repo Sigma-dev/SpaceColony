@@ -2,12 +2,12 @@ use approx::AbsDiffEq;
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}
 };
-use crate::{blinking_sprite::BlinkingSprite, looping_float::LoopingFloat, mouse_position::MousePosition, planet::{Planet, Planets}, planet_sticker::{IsCollidingWith, PlanetSticker}, spawn_building, natural_resource::NaturalResource, ResourceType};
+use crate::{mouse_position::MousePosition, planet::Planet, planet_queries::PlanetQueries, planet_sticker::{PlanetCollider, PlanetSticker}, ResourceType};
 
 #[derive(Component)]
 pub struct PlanetPlacingGhost;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum BuildingType {
     Sawmill = 32
 }
@@ -15,6 +15,8 @@ pub enum BuildingType {
 pub struct BuildingInfo {
     pub exploited_resource: ResourceType,
     pub range: f32,
+    pub image_path: String,
+    pub size: f32,
 }
 
 pub trait GetBuildingInfo {
@@ -25,7 +27,7 @@ impl GetBuildingInfo for BuildingType {
     fn get_building_info(&self) -> BuildingInfo
     {
         match self {
-            BuildingType::Sawmill => BuildingInfo { exploited_resource: ResourceType::Wood, range: 64. },
+            BuildingType::Sawmill => BuildingInfo { exploited_resource: ResourceType::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8. },
         }
     }
 }
@@ -56,13 +58,80 @@ impl Material2d for CircleMaterial {
     }
 }
 
+#[derive(Event)]
+struct ToggleBuilding {
+    building_type: BuildingType
+}
+
+#[derive(Resource)]
+struct BuildingSelection {
+    buildings: Vec<BuildingType>
+}
+
 pub struct PlanetPlacingPlugin;
 
 impl Plugin for PlanetPlacingPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(PlanetPlacing::default())
+        app
+        .insert_resource(PlanetPlacing::default())
+        .insert_resource(BuildingSelection {buildings: vec![BuildingType::Sawmill]})
+        .add_event::<ToggleBuilding>()
         .add_systems(Startup, spawn_ghost)
-        .add_systems(Update, (handle_ghost, handle_circle, blink_resource_in_range));
+        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost));
+    }
+}
+
+fn handle_selection(
+    keys: Res<ButtonInput<KeyCode>>,
+    building_selection: Res<BuildingSelection>,
+    mut building_writer: EventWriter<ToggleBuilding>
+) {
+    let mut maybe_selection: Option<usize> = None;
+    if keys.just_pressed(KeyCode::Digit1) {
+        maybe_selection = Some(0);
+    }
+    else if keys.just_pressed(KeyCode::Digit2) {
+        maybe_selection = Some(1);
+    }
+    else if keys.just_pressed(KeyCode::Digit3) {
+        maybe_selection = Some(2);
+    }
+    else if keys.just_pressed(KeyCode::Digit4) {
+        maybe_selection = Some(3);
+    }
+    else if keys.just_pressed(KeyCode::Digit5) {
+        maybe_selection = Some(4);
+    }
+    else if keys.just_pressed(KeyCode::Digit6) {
+        maybe_selection = Some(5);
+    }
+    else if keys.just_pressed(KeyCode::Digit7) {
+        maybe_selection = Some(6);
+    }
+    else if keys.just_pressed(KeyCode::Digit8) {
+        maybe_selection = Some(7);
+    }
+    else if keys.just_pressed(KeyCode::Digit9) {
+        maybe_selection = Some(8);
+    }
+    else if keys.just_pressed(KeyCode::Digit0) {
+        maybe_selection = Some(9);
+    }
+    let Some(selection) = maybe_selection else { return };
+    if let Some(building_type) = building_selection.buildings.get(selection) {
+        building_writer.send(ToggleBuilding { building_type: *building_type });
+    }
+}
+
+fn handle_currently_building(
+    mut toggle_building_reader: EventReader<ToggleBuilding>,
+    mut planet_placing: ResMut<PlanetPlacing>
+) {
+    let Some(event) = toggle_building_reader.read().last() else { return };
+    if Some(event.building_type) == planet_placing.building_type {
+        planet_placing.building_type = None
+    } else {
+        planet_placing.building_type = Some(event.building_type)
     }
 }
 
@@ -72,12 +141,11 @@ fn spawn_ghost(
     mut circle_materials: ResMut<Assets<CircleMaterial>>,
 ) {
     commands.spawn((
-        Sprite::default(),
-        PlanetPlacingGhost,
-        PlanetSticker {
-            size_degrees: Some(16.),
+        Sprite {
+            anchor: Anchor::BottomCenter,
             ..default()
         },
+        PlanetPlacingGhost,
         Name::new("PlacingGhost")
     )).with_children(|parent| {
         parent.spawn((
@@ -86,7 +154,6 @@ fn spawn_ghost(
             Name::new("PlacingGhostCircle")
         ));
     });
-    commands.insert_resource(PlanetPlacing { building_type: None })
 }
 
 fn handle_circle(
@@ -102,7 +169,41 @@ fn handle_circle(
     }
 }
 
-fn blink_resource_in_range(
+fn handle_ghost(
+    mut commands: Commands,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    mouse_position: Res<MousePosition>,
+    mut planet_placing: ResMut<PlanetPlacing>,
+    mut ghost_query: Query<(Entity, &mut Transform, &mut Visibility, &mut Sprite, Option<&mut PlanetSticker>), (With<PlanetPlacingGhost>, Without<Planet>)>,
+    asset_server: Res<AssetServer>,
+    mut planet_queries: PlanetQueries
+) {
+    let (ghost_entity, mut ghost_transform, mut ghost_visibility, mut ghost_sprite, maybe_ghost_sticker) = ghost_query.single_mut();
+    
+    if let Some(building_type) = planet_placing.building_type {
+        let building_info = building_type.get_building_info();
+        *ghost_visibility = Visibility::Visible;
+        if maybe_ghost_sticker.is_none() {
+            ghost_transform.translation = mouse_position.world_position.extend(0.);
+            ghost_transform.rotation = Quat::default();
+        }
+        ghost_sprite.image = asset_server.load(building_info.image_path);
+        if let Some(closest) = planet_queries.find_closest_surface(mouse_position.world_position) {
+            if closest.distance < 20. {
+                commands.entity(ghost_entity).insert((
+                    PlanetSticker::new(closest.planet, closest.pos_degrees),
+                    PlanetCollider::new(building_info.size)
+                ));
+                return;
+            }
+        }
+    } else {
+        *ghost_visibility = Visibility::Hidden;
+    }
+    commands.entity(ghost_entity).remove::<(PlanetSticker, PlanetCollider)>();
+} 
+
+/* fn blink_resource_in_range(
     planets_query: Query<&Planet>,
     ghost_query: Query<&PlanetSticker, With<PlanetPlacingGhost>>,
     mut natural_resource_query: Query<(&NaturalResource, &PlanetSticker, &mut BlinkingSprite), Without<PlanetPlacingGhost>>,
@@ -114,16 +215,16 @@ fn blink_resource_in_range(
         let Some(building_type) = &planet_placing.building_type else { 
             continue;
         };
-        let Some(planet_entity) = ghost.planet else { continue; };
-        let Ok(planet) = planets_query.get(planet_entity) else { continue; };
+        let Ok(planet) = planets_query.get(ghost.planet) else { continue; };
         let info = building_type.get_building_info();
         let arc_distance = resource_sticker.position_degrees.arc_distance(ghost.position_degrees.to_f32(), planet.radius);
         if arc_distance <= info.range && natural_resource.produced_resource == info.exploited_resource {
             blinking.enabled = true;
         }
+        if let Some((planet_entity, angle)) = find_closest_surface(mouse_position.world_position, &planets.all, &planets_query, 20.) {
     }
-}
-
+} */
+/*
 fn handle_ghost(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
@@ -173,6 +274,7 @@ fn handle_ghost(
         *ghost_visibility = Visibility::Hidden;
     }
 }
+*/
 
 fn find_closest_surface(pos: Vec2, planets: &Vec<Entity>, planets_query: &Query<(Entity, &Planet, &GlobalTransform)>, threshold: f32) -> Option<(Entity, f32)> {
     let mut best: Option<(Entity, f32)> = None;
@@ -189,13 +291,4 @@ fn find_closest_surface(pos: Vec2, planets: &Vec<Entity>, planets_query: &Query<
         }
     }
     return best;
-}
-
-fn check_planet_collisions(sticker: &PlanetSticker, stickers_query: &Query<&PlanetSticker, Without<PlanetPlacingGhost>>) -> bool{
-    for other_sticker in stickers_query.iter() {
-        if sticker.is_colliding_with(other_sticker) {
-            return true
-        }
-    }
-    return false;
 }
