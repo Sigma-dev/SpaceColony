@@ -36,8 +36,8 @@ pub struct PlanetQueries<'w, 's> {
 }
 
 pub struct StickerCollider {
-    sticker: PlanetSticker,
-    collider: PlanetCollider,
+    pub sticker: PlanetSticker,
+    pub collider: PlanetCollider,
 }
 
 impl StickerCollider {

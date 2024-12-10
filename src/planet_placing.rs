@@ -2,7 +2,7 @@ use approx::AbsDiffEq;
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}
 };
-use crate::{mouse_position::MousePosition, planet::Planet, planet_queries::PlanetQueries, planet_sticker::{PlanetCollider, PlanetSticker}, ResourceType};
+use crate::{mouse_position::MousePosition, planet::Planet, planet_queries::{PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, ResourceType};
 
 #[derive(Component, Debug)]
 pub struct PlanetPlacingGhost {
@@ -210,7 +210,12 @@ fn compute_ghost_state(
     if let Some(building_type) = planet_placing.building_type {
         if let Some(closest) = planet_queries.find_closest_surface(mouse_pos) {
             if closest.distance < 20. {
-                ghost_state.state = GhostState::AttachedValid(building_type, closest.planet, closest.pos_degrees);
+                let sc = StickerCollider { sticker: PlanetSticker::new(closest.planet, closest.pos_degrees), collider: PlanetCollider::new(building_type.get_building_info().size)};
+                if planet_queries.overlaps_anything(sc) {
+                    ghost_state.state = GhostState::AttachedInvalid(building_type, closest.planet, closest.pos_degrees);
+                } else {
+                    ghost_state.state = GhostState::AttachedValid(building_type, closest.planet, closest.pos_degrees);
+                }
                 return;
             }
         }
