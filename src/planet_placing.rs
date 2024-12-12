@@ -1,8 +1,10 @@
+use core::f32;
+
 use approx::AbsDiffEq;
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}, utils::{HashMap}
 };
-use crate::{mouse_position::MousePosition, planet::Planet, planet_queries::{PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, storage::SpaceResource, ui::PlanetResourcesUpdate, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, mouse_position::MousePosition, natural_resource::NaturalResource, planet::Planet, planet_queries::{PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, storage::SpaceResource, ui::PlanetResourcesUpdate, ResourceType};
 
 #[derive(Component, Debug)]
 pub struct PlanetPlacingGhost {
@@ -19,7 +21,8 @@ pub struct BuildingInfo {
     pub range: f32,
     pub image_path: String,
     pub size: f32,
-    pub cost: HashMap<SpaceResource, u32>
+    pub cost: HashMap<SpaceResource, u32>,
+    pub resource_boost: u32,
 }
 
 pub trait GetBuildingInfo {
@@ -30,7 +33,7 @@ impl GetBuildingInfo for BuildingType {
     fn get_building_info(&self) -> BuildingInfo
     {
         match self {
-            BuildingType::Sawmill => BuildingInfo { exploited_resource: ResourceType::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8., cost: HashMap::from([(SpaceResource::Wood, 8)]) },
+            BuildingType::Sawmill => BuildingInfo { exploited_resource: ResourceType::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8., cost: HashMap::from([(SpaceResource::Wood, 8)]), resource_boost: 8 },
         }
     }
 }
@@ -80,7 +83,7 @@ impl Plugin for PlanetPlacingPlugin {
         .insert_resource(BuildingSelection {buildings: vec![BuildingType::Sawmill]})
         .add_event::<ToggleBuilding>()
         .add_systems(Startup, spawn_ghost)
-        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost, handle_events, compute_ghost_state));
+        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost, handle_events, compute_ghost_state, handle_blinking_resources));
     }
 }
 
@@ -269,6 +272,39 @@ fn handle_events(
         GhostState::AttachedInvalid(_, planet, _) => planet_resource_events.send(PlanetResourcesUpdate::on(planet_queries.get_resources_on_planet(planet))),
         GhostState::AttachedValid(_, planet, _) => planet_resource_events.send(PlanetResourcesUpdate::on(planet_queries.get_resources_on_planet(planet))),
     };
+}
+
+fn handle_blinking_resources(
+    ghost_query: Query<&PlanetPlacingGhost>,
+    planet_query: Query<&Planet>,
+    mut text_query: Query<(&mut Visibility, &mut Text2d)>,
+    mut natural_resource_query: Query<(&Children, &NaturalResource, &PlanetSticker, &mut BlinkingSprite), Without<PlanetPlacingGhost>>,
+) {
+    let ghost_state = ghost_query.single();
+
+    for (children, natural_resource, resource_sticker, mut blinking) in natural_resource_query.iter_mut() {
+        let mut selected_by = None;
+        blinking.enabled = false;
+        if let Some((building_type, planet_entity, position)) = ghost_state.state.get_attached() {
+            let info = building_type.get_building_info();
+            let planet = planet_query.get(planet_entity).unwrap();
+            let arc_distance = resource_sticker.arc_distance(position, planet_entity, planet.radius);
+            if arc_distance.unwrap_or(f32::MAX) <= info.range && natural_resource.produced_resource == info.exploited_resource {
+                blinking.enabled = true;
+                selected_by = Some(building_type);
+            }
+        }
+        for child in children {
+            if let Ok((mut vis, mut text)) = text_query.get_mut(*child) {
+                if let Some(building_type) = selected_by {
+                    *vis = Visibility::Visible;
+                    text.0 = format!("+{}", building_type.get_building_info().resource_boost);
+                } else {
+                    *vis = Visibility::Hidden;
+                }
+            }
+        }
+    }
 }
 
 /* fn blink_resource_in_range(

@@ -3,11 +3,12 @@ Add that pressing 1 toggles the sawmill  V
 Add that it snaps to the planet when close enough V
 Add that if there is no collision, the preview becomes valid V
 Add that it is only valid if there is the correct amount of resources stored on the planet, show the amount stored on the planet when building V
-Add that it shows what trees are in range by blinking
+Add that it shows what trees are in range by blinking V
 Add that the sawmill can be placed, and store the trees that it has in range in a list
 Add working production and storage to the sawmill, and make it visible
 Add upgrading the sawmill, which increases it's size and production per tree but is blocked if there are things too close or there are not enough resources.
 Add a penalty for sawmills sharing the same trees, penalty shouldn't make it completely un-worth it to stack sawmills though.
+Add minimalist hud for buildings keys/costs so that a new player could understand it
 Add mountains
 Add rockmills that work like sawmills but for mountains, except they penalize the presence of another rockmill instead of mountain sharing
 Add storages, they automatically get the excess resource from buildings (for now add a extra stored bool to the producers, and the storages query for producers nearby and get their excess)

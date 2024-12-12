@@ -5,6 +5,12 @@ pub struct BlinkingSprite {
     pub enabled: bool
 }
 
+impl BlinkingSprite {
+    pub fn new(enabled: bool) -> BlinkingSprite {
+        BlinkingSprite { enabled }
+    }
+}
+
 pub struct BlinkingSpritePlugin;
 
 impl Plugin for BlinkingSpritePlugin {

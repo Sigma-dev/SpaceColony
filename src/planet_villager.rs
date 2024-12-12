@@ -227,7 +227,7 @@ fn handle_working_villagers(
                     if worker.production_interval <= 0.0 {
                         let index = natural_resource.produced_resource as i32;
                         let current_value = resources.stored.get(&index).copied().unwrap_or(0);
-                        natural_resource.amount_remaining -= 1;
+                      //  natural_resource.amount_remaining -= 1;
                         resources.stored.insert(index, current_value + 1 as i32);
                         worker.production_interval = 1.0;
                     }

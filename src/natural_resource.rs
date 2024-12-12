@@ -8,7 +8,6 @@ use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, plan
 #[derive(Component, PartialEq)]
 pub struct NaturalResource {
     pub produced_resource: ResourceType,
-    pub amount_remaining: u32,
 }
 
 pub enum Biome {
@@ -74,7 +73,7 @@ fn handle_natural_resources (
     mut commands: Commands,
     mut natural_resource_query: Query<(Entity, &NaturalResource, &Transform, &mut ScalingSprite)>
 ) {
-    for (natural_resource_entity, natural_resource, transform, mut scaling) in natural_resource_query.iter_mut() {
+    /*for (natural_resource_entity, natural_resource, transform, mut scaling) in natural_resource_query.iter_mut() {
         if natural_resource.amount_remaining <= 0 {
             scaling.target_scale = Vec3::ZERO;
             commands.entity(natural_resource_entity).despawn_descendants();
@@ -83,15 +82,15 @@ fn handle_natural_resources (
                 commands.entity(natural_resource_entity).despawn();
             }
         }
-    }
+    }*/
 }
 
 fn spawn_natural_resource(commands: &mut Commands, occupable_parameters: OccupableParameters, produced: ResourceType, amount: u32) {
-    let occupable = spawn_occupable(commands, occupable_parameters);
+    /* let occupable = spawn_occupable(commands, occupable_parameters);
     commands.entity(occupable).insert((
         NaturalResource { produced_resource: produced, amount_remaining: amount },
         BlinkingSprite { enabled: false }
-    ));
+    )); */
 }
 
 
@@ -101,7 +100,7 @@ pub fn spawn_tree(
     planet: Entity,
     position_degrees: f32,
 ) {
-    spawn_natural_resource(
+   /*  spawn_natural_resource(
         commands,
         OccupableParameters::new(
             asset_server.load("environment/tree.png"),
@@ -114,7 +113,7 @@ pub fn spawn_tree(
         ),
         ResourceType::Wood,
         2,
-    );
+    ); */
 }
 
 pub fn spawn_bush(
@@ -123,7 +122,7 @@ pub fn spawn_bush(
     planet: Entity,
     position_degrees: f32,
 ) {
-    spawn_natural_resource(
+    /* spawn_natural_resource(
         commands,
         OccupableParameters::new(
             asset_server.load("environment/bush.png"),
@@ -136,7 +135,7 @@ pub fn spawn_bush(
         ),
         ResourceType::Food,
         10,
-    );
+    ); */
 }
 
 pub fn spawn_fish(
@@ -145,7 +144,7 @@ pub fn spawn_fish(
     planet: Entity,
     position_degrees: f32,
 ) {
-    spawn_natural_resource(
+    /* spawn_natural_resource(
         commands,
         OccupableParameters::new(
             asset_server.load("environment/fish.png"),
@@ -158,5 +157,5 @@ pub fn spawn_fish(
         ),
         ResourceType::Food,
         10,
-    );
+    ); */
 }

@@ -28,6 +28,12 @@ impl PlanetSticker {
     pub fn to_segment(&self, width: f32) -> Vec2 {
         Vec2::new((self.position_degrees - width / 2.0).to_f32(), (self.position_degrees + width / 2.0).to_f32())
     }
+
+    pub fn arc_distance(&self, pos: f32, planet: Entity, radius: f32, ) -> Option<f32> {
+        if self.planet != planet { return None }
+        let dist_degrees = self.position_degrees.distance(pos);
+        return Some(radius * dist_degrees.to_radians());
+    }
 }
 
 pub struct PlanetStickerPlugin;

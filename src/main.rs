@@ -7,11 +7,11 @@ mod occupables {
 
 use background::BackgroundPlugin;
 use bevy_pancam::{PanCam, PanCamPlugin};
-use blinking_sprite::BlinkingSpritePlugin;
+use blinking_sprite::{BlinkingSprite, BlinkingSpritePlugin};
 use color_correction::{PostProcessPlugin, PostProcessSettings};
 use looping_float::LoopingFloat;
 use mouse_position::MousePositionPlugin;
-use natural_resource::{spawn_bush, spawn_tree, NaturalResourcePlugin};
+use natural_resource::{spawn_bush, spawn_tree, NaturalResource, NaturalResourcePlugin};
 use noisy_bevy::NoisyShaderPlugin;
 use occupable::*;
 use occupables::*;
@@ -174,12 +174,26 @@ fn place_trees_randomly(
             anchor: Anchor::BottomCenter,
             ..default()
         },
+        BlinkingSprite::new(false),
         PlanetSticker {
             planet,
             position_degrees: LoopingFloat::new(pos),
         },
         PlanetCollider {
             size_degrees: tree_size
-        }
+        },
+        NaturalResource {
+            produced_resource: ResourceType::Wood
+        },
+    )).with_child((
+        Transform::from_translation(Vec3::new(0., 20., 0.)),
+        Text2d::default(),
+        TextFont {
+            font_size: 5.,
+            font_smoothing: bevy::text::FontSmoothing::None,
+            font: asset_server.load("fonts/pixel.ttf")
+        },
+        TextLayout::new_with_justify(JustifyText::Center),
+        Visibility::Hidden,
     ));
 }
