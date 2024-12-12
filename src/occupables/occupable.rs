@@ -268,7 +268,7 @@ fn handle_automators(
     >,
     mut villager_query: Query<(Entity, &mut VillagerWorking)>,
 ) {
-    for (automator_entity, automator, _automator_occupable, automator_sticker) in
+    /* for (automator_entity, automator, _automator_occupable, automator_sticker) in
         automator_query.iter()
     {
         let mut free: Vec<Entity> = vec![];
@@ -317,7 +317,7 @@ fn handle_automators(
             villager.current_work = occupable_entity;
             free.pop();
         }
-    }
+    } */
 }
 
 fn select_entity_system(
@@ -386,7 +386,7 @@ pub fn spawn_building(
     position_degrees: f32,
     building_type: BuildingType,
 ) {
-    let texture_path = match building_type {
+    /* let texture_path = match building_type {
         BuildingType::Sawmill => "buildings/sawmill.png",
     };
     let info = building_type.get_building_info();
@@ -403,5 +403,5 @@ pub fn spawn_building(
         ),
         info.range,
         info.exploited_resource,
-    );
+    ); */
 }

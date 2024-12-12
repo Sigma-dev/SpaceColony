@@ -1,10 +1,11 @@
+use core::f32;
 use std::f32::consts::PI;
 
 use approx::AbsDiffEq;
-use bevy::{ecs::system::{lifetimeless::Read, SystemParam}, prelude::*, utils::HashMap};
+use bevy::{ecs::system::{lifetimeless::{Read, Write}, SystemParam}, prelude::*, utils::HashMap};
 use rand::Rng;
 
-use crate::{looping_float::{self, LoopingFloat}, planet::Planet, planet_placing::PlanetPlacingGhost, planet_sticker::{PlanetCollider, PlanetSticker}, storage::{SpaceResource, SpaceResources, SpaceResourcesTrait, Storage}};
+use crate::{looping_float::{self, LoopingFloat}, natural_resource::{self, NaturalResource}, planet::Planet, planet_placing::PlanetPlacingGhost, planet_sticker::{PlanetCollider, PlanetSticker}, storage::{SpaceResource, SpaceResources, SpaceResourcesTrait, Storage}};
 
 #[derive(SystemParam)]
 pub struct PlanetQueries<'w, 's> {
@@ -27,13 +28,16 @@ pub struct PlanetQueries<'w, 's> {
             Entity,
             Read<PlanetSticker>,
             Read<PlanetCollider>,
-            Option<Read<Storage>>
+            Option<Write<Storage>>,
+            Option<Read<NaturalResource>>,
         ),
         (
             Without<PlanetPlacingGhost>,
             Without<Planet>,
         ),
     >,
+    #[doc(hidden)]
+    pub commands: Commands<'w, 's>,
 }
 
 pub struct StickerCollider {
@@ -59,7 +63,7 @@ impl<'w, 's> PlanetQueries<'w, 's> {
         sc: StickerCollider
     ) -> bool {
         let (planet_entity, _planet_transform, _planet) = self.planet_query.get(sc.sticker.planet).unwrap();
-        for (_, other_sticker, other_collider, _) in self.stickers_query.iter() {
+        for (_, other_sticker, other_collider, _, _) in self.stickers_query.iter() {
             if other_sticker.planet != planet_entity { continue; }
             if sc.is_colliding_with(&StickerCollider { sticker: *other_sticker, collider: *other_collider }) {
                 return true
@@ -108,7 +112,7 @@ impl<'w, 's> PlanetQueries<'w, 's> {
         e1: Entity,
         e2: Entity,
     ) -> bool {
-        let [(_, s1, c1, _), (_, s2, c2, _)] = self.stickers_query.get_many([e1, e2]).unwrap();
+        let [(_, s1, c1, _, _), (_, s2, c2, _, _)] = self.stickers_query.get_many([e1, e2]).unwrap();
         
         StickerCollider {
             sticker: *s1,
@@ -124,7 +128,7 @@ impl<'w, 's> PlanetQueries<'w, 's> {
         planet: Entity,
     ) -> SpaceResources {
         let mut resources = SpaceResources::new();
-        for (_, storage_sticker, _, maybe_storage) in self.stickers_query.iter() {
+        for (_, storage_sticker, _, maybe_storage, _) in self.stickers_query.iter() {
             if storage_sticker.planet != planet { continue; }
             if let Some(storage) = maybe_storage {
                 resources = resources.combine(&storage.resources)
@@ -139,5 +143,47 @@ impl<'w, 's> PlanetQueries<'w, 's> {
         resources: SpaceResources,
     ) -> bool {
         self.get_resources_on_planet(planet).contains(&resources)
+    }
+
+    pub fn try_place<T: Bundle>(&mut self, bundle: T, sticker: PlanetSticker, collider: PlanetCollider) -> Result<Entity, ()> {
+        let sc = StickerCollider { sticker, collider };
+        if self.overlaps_anything(sc) {
+            return Err(());
+        }
+        let id = self.commands.spawn((bundle, sticker, collider)).id();
+        Ok(id)
+    }
+
+    pub fn remove_resources(
+        &mut self,
+        planet: Entity,
+        resources: SpaceResources
+    ) {
+        let mut remaining = resources.clone();
+        for (_, storage_sticker, _, maybe_storage, _) in self.stickers_query.iter_mut() {
+            if storage_sticker.planet != planet { continue; }
+            if resources.is_empty() {
+                return;
+            }
+            if let Some(mut storage) = maybe_storage {
+                remaining = storage.remove_many(remaining);
+            }
+        }
+        if !remaining.is_empty() {
+            println!("{:?}", remaining);
+            panic!("Remaining resources")
+        }
+    }
+    
+    pub fn get_natural_resource_in_range(&self, sticker: PlanetSticker, range: f32, resource: SpaceResource) -> Vec<Entity> {
+        let (_, _, planet) = self.planet_query.get(sticker.planet).unwrap();
+        let mut result = Vec::new();
+        for (resource_entity, resource_sticker, _, _, maybe_natural_resource) in self.stickers_query.iter() {
+            if maybe_natural_resource.map_or(true, |n| n.produced_resource != resource) { continue; }
+            if sticker.arc_distance_to(*resource_sticker, planet.radius).unwrap_or(f32::MAX) <= range {
+                result.push(resource_entity);
+            }
+        }
+        result
     }
 }

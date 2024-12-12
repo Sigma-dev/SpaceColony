@@ -34,6 +34,12 @@ impl PlanetSticker {
         let dist_degrees = self.position_degrees.distance(pos);
         return Some(radius * dist_degrees.to_radians());
     }
+
+    pub fn arc_distance_to(&self, sticker: PlanetSticker, radius: f32, ) -> Option<f32> {
+        if self.planet != sticker.planet { return None }
+        let dist_degrees = self.position_degrees.distance(sticker.position_degrees.to_f32());
+        return Some(radius * dist_degrees.to_radians());
+    }
 }
 
 pub struct PlanetStickerPlugin;

@@ -31,6 +31,7 @@ mod scaling_sprite;
 mod color_correction;
 mod planet_queries;
 mod storage;
+mod spawn_building;
 
 use bevy::{
     prelude::*, sprite::{Anchor, Material2dPlugin}, utils::hashbrown::HashMap, window::PresentMode
@@ -42,6 +43,7 @@ use planet_sticker::{PlanetCollider, PlanetSticker};
 use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
 use scaling_sprite::ScalingSpritePlugin;
+use spawn_building::SpawnBuildingPlugin;
 use storage::{SpaceResource, Storage};
 use ui::CustomUiPlugin;
 
@@ -75,6 +77,7 @@ fn main() {
             NaturalResourcePlugin,
             ScalingSpritePlugin,
         ))
+        .add_plugins(SpawnBuildingPlugin)
         .add_plugins(NoisyShaderPlugin)
         .add_plugins(PostProcessPlugin)
         .add_plugins(PanCamPlugin::default())
@@ -183,7 +186,7 @@ fn place_trees_randomly(
             size_degrees: tree_size
         },
         NaturalResource {
-            produced_resource: ResourceType::Wood
+            produced_resource: SpaceResource::Wood
         },
     )).with_child((
         Transform::from_translation(Vec3::new(0., 20., 0.)),

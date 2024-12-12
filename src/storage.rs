@@ -51,4 +51,22 @@ impl Storage {
     pub fn get_amount(&self, resource: SpaceResource) -> u32 {
         self.resources.get_amount(resource)
     }
+
+    pub fn remove_many(&mut self, resources: SpaceResources) -> SpaceResources {
+        let mut not_removed = SpaceResources::new();
+        for (k, v) in resources.iter() {
+            let remaining = self.remove(*k, *v);
+            if remaining > 0 {
+                not_removed.insert(*k, remaining);
+            }
+        }
+        not_removed
+    }
+
+    pub fn remove(&mut self, resource: SpaceResource, amount: u32) -> u32 {
+        let stored = self.resources.get(&resource).unwrap_or(&0);
+        let remaining = amount - stored.min(&amount);
+        self.resources.insert(resource, stored - (amount - remaining));
+        remaining
+    }
 }

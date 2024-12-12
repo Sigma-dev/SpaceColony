@@ -4,7 +4,7 @@ use approx::AbsDiffEq;
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}, utils::{HashMap}
 };
-use crate::{blinking_sprite::BlinkingSprite, mouse_position::MousePosition, natural_resource::NaturalResource, planet::Planet, planet_queries::{PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, storage::SpaceResource, ui::PlanetResourcesUpdate, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, mouse_position::MousePosition, natural_resource::NaturalResource, planet::Planet, planet_queries::{self, PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, resources::ResourceExtractor, scaling_sprite::ScalingSprite, spawn_building::SpawnBuilding, storage::SpaceResource, ui::PlanetResourcesUpdate, ResourceType};
 
 #[derive(Component, Debug)]
 pub struct PlanetPlacingGhost {
@@ -17,7 +17,7 @@ pub enum BuildingType {
 }
 
 pub struct BuildingInfo {
-    pub exploited_resource: ResourceType,
+    pub exploited_resource: SpaceResource,
     pub range: f32,
     pub image_path: String,
     pub size: f32,
@@ -27,13 +27,21 @@ pub struct BuildingInfo {
 
 pub trait GetBuildingInfo {
     fn get_building_info(&self) -> BuildingInfo;
+    fn get_bundle(&self) -> impl Bundle;
 }
 
 impl GetBuildingInfo for BuildingType {
     fn get_building_info(&self) -> BuildingInfo
     {
         match self {
-            BuildingType::Sawmill => BuildingInfo { exploited_resource: ResourceType::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8., cost: HashMap::from([(SpaceResource::Wood, 8)]), resource_boost: 8 },
+            BuildingType::Sawmill => BuildingInfo { exploited_resource: SpaceResource::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8., cost: HashMap::from([(SpaceResource::Wood, 8)]), resource_boost: 8 },
+        }
+    }
+
+    fn get_bundle(&self) -> impl Bundle {
+        let info = self.get_building_info();
+        match self {
+            BuildingType::Sawmill => ResourceExtractor::new(SpaceResource::Wood, info.range)
         }
     }
 }
@@ -232,9 +240,11 @@ fn compute_ghost_state(
 
 fn handle_ghost(
     mut commands: Commands,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
     mouse_position: Res<MousePosition>,
     mut ghost_query: Query<(Entity, &mut Transform, &mut Visibility, &mut Sprite, &PlanetPlacingGhost)>,
     asset_server: Res<AssetServer>,
+    mut spawn_building_event: EventWriter<SpawnBuilding>
 ) {
     let (ghost_entity, mut ghost_transform, mut ghost_visibility, mut ghost_sprite, ghost_state) = ghost_query.single_mut();
     let state = &ghost_state.state;
@@ -256,6 +266,12 @@ fn handle_ghost(
         ghost_sprite.image = asset_server.load(building_type.get_building_info().image_path);
     } else {
         *ghost_visibility = Visibility::Hidden;
+    }
+
+    if let GhostState::AttachedValid(building, planet, position) = state {
+        if mouse_buttons.just_pressed(MouseButton::Left) {
+            spawn_building_event.send(SpawnBuilding::new(*building, *planet, *position));
+        }
     }
 }
 

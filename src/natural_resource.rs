@@ -3,11 +3,11 @@ use std::{f32::INFINITY, time::Duration};
 use bevy::{prelude::*, time::common_conditions::on_timer};
 use rand::Rng;
 
-use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::{PlanetSticker}, scaling_sprite::ScalingSprite, spawn_occupable, Occupable, OccupableParameters, OccupableType, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, planet::{Planet, PlanetWater}, planet_sticker::PlanetSticker, scaling_sprite::ScalingSprite, spawn_occupable, storage::SpaceResource, Occupable, OccupableParameters, OccupableType, ResourceType};
 
 #[derive(Component, PartialEq)]
 pub struct NaturalResource {
-    pub produced_resource: ResourceType,
+    pub produced_resource: SpaceResource,
 }
 
 pub enum Biome {
