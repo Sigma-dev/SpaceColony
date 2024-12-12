@@ -1,8 +1,8 @@
 use approx::AbsDiffEq;
 use bevy::{
-    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}
+    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}, utils::{HashMap}
 };
-use crate::{mouse_position::MousePosition, planet::Planet, planet_queries::{PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, ResourceType};
+use crate::{mouse_position::MousePosition, planet::Planet, planet_queries::{PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, storage::SpaceResource, ui::PlanetResourcesUpdate, ResourceType};
 
 #[derive(Component, Debug)]
 pub struct PlanetPlacingGhost {
@@ -19,6 +19,7 @@ pub struct BuildingInfo {
     pub range: f32,
     pub image_path: String,
     pub size: f32,
+    pub cost: HashMap<SpaceResource, u32>
 }
 
 pub trait GetBuildingInfo {
@@ -29,7 +30,7 @@ impl GetBuildingInfo for BuildingType {
     fn get_building_info(&self) -> BuildingInfo
     {
         match self {
-            BuildingType::Sawmill => BuildingInfo { exploited_resource: ResourceType::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8. },
+            BuildingType::Sawmill => BuildingInfo { exploited_resource: ResourceType::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8., cost: HashMap::from([(SpaceResource::Wood, 8)]) },
         }
     }
 }
@@ -79,7 +80,7 @@ impl Plugin for PlanetPlacingPlugin {
         .insert_resource(BuildingSelection {buildings: vec![BuildingType::Sawmill]})
         .add_event::<ToggleBuilding>()
         .add_systems(Startup, spawn_ghost)
-        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost, compute_ghost_state));
+        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost, handle_events, compute_ghost_state));
     }
 }
 
@@ -208,13 +209,14 @@ fn compute_ghost_state(
     let mouse_pos = mouse_position.world_position;
     
     if let Some(building_type) = planet_placing.building_type {
+        let info = building_type.get_building_info();
         if let Some(closest) = planet_queries.find_closest_surface(mouse_pos) {
             if closest.distance < 20. {
-                let sc = StickerCollider { sticker: PlanetSticker::new(closest.planet, closest.pos_degrees), collider: PlanetCollider::new(building_type.get_building_info().size)};
-                if planet_queries.overlaps_anything(sc) {
-                    ghost_state.state = GhostState::AttachedInvalid(building_type, closest.planet, closest.pos_degrees);
-                } else {
+                let sc = StickerCollider { sticker: PlanetSticker::new(closest.planet, closest.pos_degrees), collider: PlanetCollider::new(info.size)};
+                if !planet_queries.overlaps_anything(sc) && planet_queries.can_afford_on_planet(closest.planet, info.cost) {
                     ghost_state.state = GhostState::AttachedValid(building_type, closest.planet, closest.pos_degrees);
+                } else {
+                    ghost_state.state = GhostState::AttachedInvalid(building_type, closest.planet, closest.pos_degrees);
                 }
                 return;
             }
@@ -252,7 +254,22 @@ fn handle_ghost(
     } else {
         *ghost_visibility = Visibility::Hidden;
     }
-} 
+}
+
+fn handle_events(
+    ghost_query: Query<&PlanetPlacingGhost>,
+    mut planet_resource_events: EventWriter<PlanetResourcesUpdate>,
+    planet_queries: PlanetQueries
+) {
+    let ghost_state = ghost_query.single();
+
+    match ghost_state.state {
+        GhostState::Hidden => planet_resource_events.send(PlanetResourcesUpdate::off()),
+        GhostState::Detached(_, _) => planet_resource_events.send(PlanetResourcesUpdate::off()),
+        GhostState::AttachedInvalid(_, planet, _) => planet_resource_events.send(PlanetResourcesUpdate::on(planet_queries.get_resources_on_planet(planet))),
+        GhostState::AttachedValid(_, planet, _) => planet_resource_events.send(PlanetResourcesUpdate::on(planet_queries.get_resources_on_planet(planet))),
+    };
+}
 
 /* fn blink_resource_in_range(
     planets_query: Query<&Planet>,

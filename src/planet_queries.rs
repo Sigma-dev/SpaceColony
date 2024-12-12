@@ -1,10 +1,10 @@
 use std::f32::consts::PI;
 
 use approx::AbsDiffEq;
-use bevy::{ecs::system::{lifetimeless::Read, SystemParam}, prelude::*};
+use bevy::{ecs::system::{lifetimeless::Read, SystemParam}, prelude::*, utils::HashMap};
 use rand::Rng;
 
-use crate::{looping_float::{self, LoopingFloat}, planet::Planet, planet_placing::PlanetPlacingGhost, planet_sticker::{PlanetCollider, PlanetSticker}};
+use crate::{looping_float::{self, LoopingFloat}, planet::Planet, planet_placing::PlanetPlacingGhost, planet_sticker::{PlanetCollider, PlanetSticker}, storage::{SpaceResource, SpaceResources, SpaceResourcesTrait, Storage}};
 
 #[derive(SystemParam)]
 pub struct PlanetQueries<'w, 's> {
@@ -26,7 +26,8 @@ pub struct PlanetQueries<'w, 's> {
         (
             Entity,
             Read<PlanetSticker>,
-            Read<PlanetCollider>
+            Read<PlanetCollider>,
+            Option<Read<Storage>>
         ),
         (
             Without<PlanetPlacingGhost>,
@@ -42,18 +43,7 @@ pub struct StickerCollider {
 
 impl StickerCollider {
     pub fn is_colliding_with(&self, other: &StickerCollider) -> bool {
-        if self.sticker.planet != other.sticker.planet {
-                return false;
-        }
-        let start1 = self.sticker.position_degrees - self.collider.size_degrees / 2.0;
-        let end1 = self.sticker.position_degrees + self.collider.size_degrees / 2.0;
-
-        // Calculate the start and end points of the second segment
-        let start2 = other.sticker.position_degrees - other.collider.size_degrees / 2.0;
-        let end2 = other.sticker.position_degrees + other.collider.size_degrees / 2.0;
-
-        // Check for overlap
-        !(end1 < start2 || end2 < start1)
+        self.sticker.position_degrees.distance(other.sticker.position_degrees.to_f32()) < self.collider.size_degrees / 2. + other.collider.size_degrees / 2.
     }
 }
 
@@ -69,7 +59,7 @@ impl<'w, 's> PlanetQueries<'w, 's> {
         sc: StickerCollider
     ) -> bool {
         let (planet_entity, _planet_transform, _planet) = self.planet_query.get(sc.sticker.planet).unwrap();
-        for (_, other_sticker, other_collider) in self.stickers_query.iter() {
+        for (_, other_sticker, other_collider, _) in self.stickers_query.iter() {
             if other_sticker.planet != planet_entity { continue; }
             if sc.is_colliding_with(&StickerCollider { sticker: *other_sticker, collider: *other_collider }) {
                 return true
@@ -118,7 +108,7 @@ impl<'w, 's> PlanetQueries<'w, 's> {
         e1: Entity,
         e2: Entity,
     ) -> bool {
-        let [(_, s1, c1), (_, s2, c2)] = self.stickers_query.get_many([e1, e2]).unwrap();
+        let [(_, s1, c1, _), (_, s2, c2, _)] = self.stickers_query.get_many([e1, e2]).unwrap();
         
         StickerCollider {
             sticker: *s1,
@@ -127,5 +117,27 @@ impl<'w, 's> PlanetQueries<'w, 's> {
             sticker: *s2,
             collider: *c2
         })
+    }
+
+    pub fn get_resources_on_planet(
+        &self,
+        planet: Entity,
+    ) -> SpaceResources {
+        let mut resources = SpaceResources::new();
+        for (_, storage_sticker, _, maybe_storage) in self.stickers_query.iter() {
+            if storage_sticker.planet != planet { continue; }
+            if let Some(storage) = maybe_storage {
+                resources = resources.combine(&storage.resources)
+            }
+        }
+        resources
+    }
+
+    pub fn can_afford_on_planet(
+        &self,
+        planet: Entity,
+        resources: SpaceResources,
+    ) -> bool {
+        self.get_resources_on_planet(planet).contains(&resources)
     }
 }

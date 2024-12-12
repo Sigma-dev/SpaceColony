@@ -1,21 +1,44 @@
+use std::str::FromStr;
+
 use bevy::prelude::*;
 use bevy::*;
 use render::render_resource::{AsBindGroup, ShaderRef};
+use utils::HashMap;
 
-use crate::{occupable::ResourceType, resources::Resources};
+use crate::{occupable::ResourceType, resources::Resources, storage::{SpaceResource, SpaceResources}};
 
 pub struct CustomUiPlugin;
 
 impl Plugin for CustomUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (update_resource_texts, update_resource_bars))
-            .add_systems(Startup, spawn_ui);
+        app.add_systems(Update, (update_resource_texts, update_resource_bars, update_planet_resources))
+            .add_systems(Startup, spawn_ui)
+            .add_event::<PlanetResourcesUpdate>();
     }
 }
 
 #[derive(Component)]
 pub struct ResourceText {
     pub resource_type: ResourceType,
+}
+
+
+#[derive(Component)]
+pub struct PlanetResourcesText;
+
+#[derive(Event)]
+pub struct PlanetResourcesUpdate {
+    pub maybe_resources: Option<SpaceResources>
+} 
+
+impl PlanetResourcesUpdate {
+    pub fn off() -> PlanetResourcesUpdate {
+        PlanetResourcesUpdate { maybe_resources: None }
+    }
+
+    pub fn on(resources: SpaceResources) -> PlanetResourcesUpdate {
+        PlanetResourcesUpdate { maybe_resources: Some(resources) }
+    }
 }
 
 #[derive(Component)]
@@ -90,6 +113,16 @@ fn spawn_ui(
                 },
             ));
         });
+    commands.spawn((
+        Text::new("5 Wood"),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: Val::Px(5.0),
+            left: Val::Px(15.0),
+            ..default()
+        },
+        PlanetResourcesText,
+    ));
 }
 
 fn update_resource_texts(resources: Res<Resources>, mut texts: Query<(&mut Text, &ResourceText)>) {
@@ -109,6 +142,23 @@ fn update_resource_bars(
         if let Some(amount) = resources.stored.get(&(resource_text.resource_type as i32)) {
             if let Some(material) = materials.get_mut(handle.id()) {
                 material.progress = (*amount as f32) / 10.0 as f32;
+            }
+        }
+    }
+}
+
+fn update_planet_resources(
+    mut resources_events: EventReader<PlanetResourcesUpdate>,
+    mut bars: Query<&mut Text, With<PlanetResourcesText>>,
+) {
+    for event in resources_events.read() {
+        for mut text in bars.iter_mut() {
+            if let Some(resource) = &event.maybe_resources {
+                let mut string = "Available Resources:\n".to_owned();
+                string.push_str((resource.iter().map(|(k, v)| format!("{} {}\n", v, k)).collect::<Vec<_>>().join("\n") + "\n").as_str());
+                text.0 = string;
+            } else {
+                text.0 = "".to_owned()
             }
         }
     }

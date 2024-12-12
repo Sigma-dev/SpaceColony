@@ -2,7 +2,8 @@ Have a planet with many trees V
 Add that pressing 1 toggles the sawmill  V
 Add that it snaps to the planet when close enough V
 Add that if there is no collision, the preview becomes valid V
-Add that it is only valid if there is the correct amount of resources stored on the planet, show the amount stored on the planet when building
+Add that it is only valid if there is the correct amount of resources stored on the planet, show the amount stored on the planet when building V
+Add that it shows what trees are in range by blinking
 Add that the sawmill can be placed, and store the trees that it has in range in a list
 Add working production and storage to the sawmill, and make it visible
 Add upgrading the sawmill, which increases it's size and production per tree but is blocked if there are things too close or there are not enough resources.

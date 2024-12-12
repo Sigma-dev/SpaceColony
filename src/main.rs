@@ -30,9 +30,10 @@ mod natural_resource;
 mod scaling_sprite;
 mod color_correction;
 mod planet_queries;
+mod storage;
 
 use bevy::{
-    prelude::*, sprite::{Anchor, Material2dPlugin}, window::PresentMode
+    prelude::*, sprite::{Anchor, Material2dPlugin}, utils::hashbrown::HashMap, window::PresentMode
 };
 use planet::{PlanetMaterial, PlanetSettings, PlanetWater, Planets};
 use planet_placing::CircleMaterial;
@@ -41,6 +42,7 @@ use planet_sticker::{PlanetCollider, PlanetSticker};
 use planet_villager::spawn_villager;
 use resources::ResourcesPlugin;
 use scaling_sprite::ScalingSpritePlugin;
+use storage::{SpaceResource, Storage};
 use ui::CustomUiPlugin;
 
 fn main() {
@@ -111,7 +113,6 @@ fn setup(
         Msaa::Off
     ));
 
-
     let main_planet = commands.spawn((
         Mesh2d(meshes.add(Rectangle{half_size: Vec2::splat(100.)})),
         MeshMaterial2d(
@@ -127,6 +128,23 @@ fn setup(
     planets.main = Some(main_planet);
     planets.all.push(main_planet);
     
+    commands.spawn((
+        Sprite { 
+            image: asset_server.load("buildings/silo.png"),
+            anchor: Anchor::BottomCenter,
+            ..default()
+        },
+        PlanetSticker {
+            planet: main_planet,
+            position_degrees: LoopingFloat::new(40.),
+        },
+        PlanetCollider {
+            size_degrees: 8.
+        },
+        Storage {
+            resources: HashMap::from([(SpaceResource::Wood, 10)])
+        }
+    ));
 }
 
 fn post_setup(
