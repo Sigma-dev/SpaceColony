@@ -4,7 +4,7 @@ use approx::AbsDiffEq;
 use bevy::{
     prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}, utils::{HashMap}
 };
-use crate::{blinking_sprite::BlinkingSprite, mouse_position::MousePosition, natural_resource::NaturalResource, planet::Planet, planet_queries::{self, PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, resources::ResourceExtractor, scaling_sprite::ScalingSprite, spawn_building::SpawnBuilding, storage::SpaceResource, ui::PlanetResourcesUpdate, ResourceType};
+use crate::{blinking_sprite::BlinkingSprite, mouse_position::MousePosition, natural_resource::NaturalResource, planet::Planet, planet_queries::{self, PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, resources::ResourceExtractor, scaling_sprite::ScalingSprite, spawn_building::SpawnBuilding, storage::{SpaceResource, Storage}, ui::PlanetResourcesUpdate, ResourceType};
 
 #[derive(Component, Debug)]
 pub struct PlanetPlacingGhost {
@@ -17,12 +17,17 @@ pub enum BuildingType {
 }
 
 pub struct BuildingInfo {
-    pub exploited_resource: SpaceResource,
     pub range: f32,
     pub image_path: String,
     pub size: f32,
     pub cost: HashMap<SpaceResource, u32>,
-    pub resource_boost: u32,
+    pub extractor_info: Option<ExtractorInfo>
+}
+
+pub struct ExtractorInfo {
+    pub extraction_time: f32,
+    pub exploitation_bonus: u32,
+    pub exploited_resource: SpaceResource,
 }
 
 pub trait GetBuildingInfo {
@@ -34,14 +39,29 @@ impl GetBuildingInfo for BuildingType {
     fn get_building_info(&self) -> BuildingInfo
     {
         match self {
-            BuildingType::Sawmill => BuildingInfo { exploited_resource: SpaceResource::Wood, range: 64., image_path: "buildings/sawmill.png".to_string(), size: 8., cost: HashMap::from([(SpaceResource::Wood, 8)]), resource_boost: 8 },
+            BuildingType::Sawmill => BuildingInfo {
+                range: 64.,
+                image_path: "buildings/sawmill.png".to_string(),
+                size: 8.,
+                cost: HashMap::from([(SpaceResource::Wood, 8)]),
+                extractor_info: Some(ExtractorInfo {
+                    extraction_time: 5.,
+                    exploitation_bonus: 8,
+                    exploited_resource: SpaceResource::Wood,
+                })},
         }
     }
 
     fn get_bundle(&self) -> impl Bundle {
         let info = self.get_building_info();
         match self {
-            BuildingType::Sawmill => ResourceExtractor::new(SpaceResource::Wood, info.range)
+            BuildingType::Sawmill => {
+                let extractor = info.extractor_info.unwrap();
+                (
+                    ResourceExtractor::new(SpaceResource::Wood, extractor.extraction_time, extractor.exploitation_bonus, info.range),
+                    Storage::new()
+                )
+            }
         }
     }
 }
@@ -302,22 +322,25 @@ fn handle_blinking_resources(
         let mut selected_by = None;
         blinking.enabled = false;
         if let Some((building_type, planet_entity, position)) = ghost_state.state.get_attached() {
-            let info = building_type.get_building_info();
-            let planet = planet_query.get(planet_entity).unwrap();
-            let arc_distance = resource_sticker.arc_distance(position, planet_entity, planet.radius);
-            if arc_distance.unwrap_or(f32::MAX) <= info.range && natural_resource.produced_resource == info.exploited_resource {
-                blinking.enabled = true;
-                selected_by = Some(building_type);
+            if let Some(extractor) = building_type.get_building_info().extractor_info {
+                let info = building_type.get_building_info();
+                let planet = planet_query.get(planet_entity).unwrap();
+                let arc_distance = resource_sticker.arc_distance(position, planet_entity, planet.radius);
+                if arc_distance.unwrap_or(f32::MAX) <= info.range && natural_resource.produced_resource == extractor.exploited_resource {
+                    blinking.enabled = true;
+                    selected_by = Some(building_type);
+                }
             }
         }
         for child in children {
             if let Ok((mut vis, mut text)) = text_query.get_mut(*child) {
+                *vis = Visibility::Hidden;
                 if let Some(building_type) = selected_by {
-                    *vis = Visibility::Visible;
-                    text.0 = format!("+{}", building_type.get_building_info().resource_boost);
-                } else {
-                    *vis = Visibility::Hidden;
-                }
+                    if let Some(extractor) = building_type.get_building_info().extractor_info { 
+                        *vis = Visibility::Visible;
+                        text.0 = format!("+{}", extractor.exploitation_bonus);
+                    }
+                } 
             }
         }
     }

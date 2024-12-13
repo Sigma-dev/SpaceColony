@@ -48,6 +48,10 @@ pub struct Storage {
 }
 
 impl Storage {
+    pub fn new() -> Storage {
+        Storage { resources: SpaceResources::new() }
+    }
+
     pub fn get_amount(&self, resource: SpaceResource) -> u32 {
         self.resources.get_amount(resource)
     }
@@ -68,5 +72,16 @@ impl Storage {
         let remaining = amount - stored.min(&amount);
         self.resources.insert(resource, stored - (amount - remaining));
         remaining
+    }
+
+    pub fn add(&mut self, resource: SpaceResource, amount: u32) {
+        let stored = *self.resources.get(&resource).unwrap_or(&0);
+        self.resources.insert(resource, stored + amount);
+    }
+
+    pub fn add_many(&mut self, resources: SpaceResources) {
+        for (k, v) in resources.iter() {
+            self.add(*k, *v);
+        }
     }
 }
