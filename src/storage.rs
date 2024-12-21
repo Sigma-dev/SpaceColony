@@ -44,12 +44,13 @@ impl SpaceResourcesTrait for SpaceResources {
 
 #[derive(Component)]
 pub struct Storage {
-    pub resources: SpaceResources
+    pub resources: SpaceResources,
+    pub max_amount: u32,
 }
 
 impl Storage {
-    pub fn new() -> Storage {
-        Storage { resources: SpaceResources::new() }
+    pub fn new(max_amount: u32) -> Storage {
+        Storage { resources: SpaceResources::new(), max_amount }
     }
 
     pub fn get_amount(&self, resource: SpaceResource) -> u32 {
@@ -83,5 +84,9 @@ impl Storage {
         for (k, v) in resources.iter() {
             self.add(*k, *v);
         }
+    }
+
+    pub fn get_stored_amount(&self) -> u32 {
+        self.resources.values().sum()
     }
 }

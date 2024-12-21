@@ -145,7 +145,8 @@ fn setup(
             size_degrees: 8.
         },
         Storage {
-            resources: HashMap::from([(SpaceResource::Wood, 10)])
+            resources: HashMap::from([(SpaceResource::Wood, 10)]),
+            max_amount: 200
         }
     ));
 }

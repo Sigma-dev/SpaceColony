@@ -1,5 +1,7 @@
 use bevy::{app::*, prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::Material2d};
 
+use crate::planet_placing::UpdateSelection;
+
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct StarsMaterial {
 }
@@ -36,7 +38,10 @@ fn spawn_background(
             ..default()
         },
         Background
-    ));
+    )).observe(|trigger: Trigger<Pointer<Click>>, mut select_event: EventWriter<UpdateSelection>|{
+        println!("damso");
+        select_event.send(UpdateSelection::new(None));
+    });
 }
 
 fn handle_background(

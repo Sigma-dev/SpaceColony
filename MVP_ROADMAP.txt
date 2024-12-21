@@ -6,10 +6,13 @@ Add that it is only valid if there is the correct amount of resources stored on 
 Add that it shows what trees are in range by blinking V
 Add that the sawmill can be placed, and store the trees that it has in range in a list V
 Add working production and storage to the sawmill, and make it visible V
-Add upgrading the sawmill, which increases it's size and production per tree but is blocked if there are things too close or there are not enough resources.
+Add selecting (shows stats and upgrade button), have it be a resource that holds the currently selected entity, then queries for all building type components for that entity, then each of those generates a paragraph describing it's current state.
+Add upgrading the sawmill, which increases it's storage space and production.
+Fix storage mechanic, making it so storage is shared cross planet and excess production is discarded and not show in ui 
 Add a penalty for sawmills sharing the same trees, penalty shouldn't make it completely un-worth it to stack sawmills though.
 Add minimalist hud for buildings keys/costs so that a new player could understand it
 Add building removal
+Make storage a buildable and upgradable building
 Fix trees overlapping
 Cleanup all the unused code and regroup all components/modules/plugins into a folder hiearchy (ex: planet_stuff/sticker_stuff/buildings_stuff)
 Also cleanup the data logic, like how building properties are stored.

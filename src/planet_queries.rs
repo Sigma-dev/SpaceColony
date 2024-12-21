@@ -5,7 +5,7 @@ use approx::AbsDiffEq;
 use bevy::{ecs::system::{lifetimeless::{Read, Write}, SystemParam}, prelude::*, utils::HashMap};
 use rand::Rng;
 
-use crate::{looping_float::{self, LoopingFloat}, natural_resource::{self, NaturalResource}, planet::Planet, planet_placing::PlanetPlacingGhost, planet_sticker::{PlanetCollider, PlanetSticker}, storage::{SpaceResource, SpaceResources, SpaceResourcesTrait, Storage}};
+use crate::{looping_float::{self, LoopingFloat}, natural_resource::{self, NaturalResource}, planet::Planet, planet_placing::{PlanetPlacingGhost, UpdateSelection}, planet_sticker::{PlanetCollider, PlanetSticker}, storage::{SpaceResource, SpaceResources, SpaceResourcesTrait, Storage}};
 
 #[derive(SystemParam)]
 pub struct PlanetQueries<'w, 's> {
@@ -150,7 +150,11 @@ impl<'w, 's> PlanetQueries<'w, 's> {
         if self.overlaps_anything(sc) {
             return Err(());
         }
-        let id = self.commands.spawn((bundle, sticker, collider)).id();
+        let id = self.commands
+        .spawn((bundle, sticker, collider))
+        .observe(|trigger: Trigger<Pointer<Click>>, mut select_event: EventWriter<UpdateSelection>|{
+            select_event.send(UpdateSelection::new(Some(trigger.entity())));
+        }).id();
         Ok(id)
     }
 

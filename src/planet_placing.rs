@@ -2,7 +2,7 @@ use core::f32;
 
 use approx::AbsDiffEq;
 use bevy::{
-    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}, utils::{HashMap}
+    prelude::*, render::render_resource::{AsBindGroup, ShaderRef, ShaderType}, sprite::{AlphaMode2d, Anchor, Material2d}, text::cosmic_text::Selection, utils::HashMap
 };
 use crate::{blinking_sprite::BlinkingSprite, mouse_position::MousePosition, natural_resource::NaturalResource, planet::Planet, planet_queries::{self, PlanetQueries, StickerCollider}, planet_sticker::{PlanetCollider, PlanetSticker}, resources::ResourceExtractor, scaling_sprite::ScalingSprite, spawn_building::SpawnBuilding, storage::{SpaceResource, Storage}, ui::PlanetResourcesUpdate, ResourceType};
 
@@ -41,7 +41,7 @@ impl GetBuildingInfo for BuildingType {
         match self {
             BuildingType::Sawmill => BuildingInfo {
                 range: 64.,
-                image_path: "buildings/sawmill.png".to_string(),
+                image_path: "buildings/saw.png".to_string(),
                 size: 8.,
                 cost: HashMap::from([(SpaceResource::Wood, 8)]),
                 extractor_info: Some(ExtractorInfo {
@@ -59,7 +59,7 @@ impl GetBuildingInfo for BuildingType {
                 let extractor = info.extractor_info.unwrap();
                 (
                     ResourceExtractor::new(SpaceResource::Wood, extractor.extraction_time, extractor.exploitation_bonus, info.range),
-                    Storage::new()
+                    Storage::new(50)
                 )
             }
         }
@@ -68,7 +68,17 @@ impl GetBuildingInfo for BuildingType {
 
 #[derive(Resource, Default)]
 pub struct PlanetPlacing {
-    building_type: Option<BuildingType>,
+    pub state: SelectionState
+}
+
+pub enum SelectionState {
+    Nothing,
+    Selected(Entity),
+    Placing(BuildingType)
+}
+
+impl Default for SelectionState {
+    fn default() -> Self { SelectionState::Nothing }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -80,6 +90,7 @@ pub struct CircleMaterial {
 #[derive(ShaderType, Debug, Clone)]
 struct CircleSettings {
     radius: f32,
+    width: f32,
 }
 
 impl Material2d for CircleMaterial {
@@ -97,8 +108,19 @@ struct ToggleBuilding {
     building_type: BuildingType
 }
 
+#[derive(Event, Debug)]
+pub struct UpdateSelection {
+    pub selected: Option<Entity>
+}
+
+impl UpdateSelection {
+    pub fn new(selected: Option<Entity>) -> UpdateSelection {
+        UpdateSelection { selected }
+    }
+}
+
 #[derive(Resource)]
-struct BuildingSelection {
+struct BuildingLibrary {
     buildings: Vec<BuildingType>
 }
 
@@ -108,16 +130,25 @@ impl Plugin for PlanetPlacingPlugin {
     fn build(&self, app: &mut App) {
         app
         .insert_resource(PlanetPlacing::default())
-        .insert_resource(BuildingSelection {buildings: vec![BuildingType::Sawmill]})
+        .insert_resource(BuildingLibrary {buildings: vec![BuildingType::Sawmill]})
         .add_event::<ToggleBuilding>()
+        .add_event::<UpdateSelection>()
         .add_systems(Startup, spawn_ghost)
-        .add_systems(Update, (handle_selection, handle_currently_building, handle_circle, handle_ghost, handle_events, compute_ghost_state, handle_blinking_resources));
+        .add_systems(Update, (handle_build_choice, handle_currently_building, handle_circle, handle_ghost, handle_events, compute_ghost_state, handle_blinking_resources, handle_selection));
     }
 }
 
 fn handle_selection(
+    mut building_selection: EventReader<UpdateSelection>,
+) {
+    for event in building_selection.read() {
+        println!("{:?}", event);
+    }
+}
+
+fn handle_build_choice(
     keys: Res<ButtonInput<KeyCode>>,
-    building_selection: Res<BuildingSelection>,
+    building_selection: Res<BuildingLibrary>,
     mut building_writer: EventWriter<ToggleBuilding>
 ) {
     let mut maybe_selection: Option<usize> = None;
@@ -162,11 +193,13 @@ fn handle_currently_building(
     mut planet_placing: ResMut<PlanetPlacing>
 ) {
     let Some(event) = toggle_building_reader.read().last() else { return };
-    if Some(event.building_type) == planet_placing.building_type {
-        planet_placing.building_type = None
-    } else {
-        planet_placing.building_type = Some(event.building_type)
+    if let SelectionState::Placing(building_type) = planet_placing.state {
+        if event.building_type == building_type {
+            planet_placing.state = SelectionState::Nothing;
+            return;
+        }
     }
+    planet_placing.state = SelectionState::Placing(event.building_type);
 }
 
 fn spawn_ghost(
@@ -184,7 +217,7 @@ fn spawn_ghost(
     )).with_children(|parent| {
         parent.spawn((
             Mesh2d(meshes.add(Rectangle { half_size: Vec2::new(100., 100.)})),
-            MeshMaterial2d(circle_materials.add(CircleMaterial { settings: CircleSettings { radius: 50. }})),
+            MeshMaterial2d(circle_materials.add(CircleMaterial { settings: CircleSettings { radius: 50., width: 0.3 }})),
             Name::new("PlacingGhostCircle")
         ));
     });
@@ -195,7 +228,7 @@ fn handle_circle(
     planet_placing: Res<PlanetPlacing>,
     mut circle_materials: ResMut<Assets<CircleMaterial>>,
 ) {
-    let Some(building_type) = &planet_placing.building_type else { return; };
+    let SelectionState::Placing(building_type) = planet_placing.state else { return; };
     for handle in circle_query.iter() {
         if let Some(material) = circle_materials.get_mut(handle.id()) {
             material.settings.radius = building_type.get_building_info().range;
@@ -239,7 +272,7 @@ fn compute_ghost_state(
     let mut ghost_state = ghost_query.single_mut();
     let mouse_pos = mouse_position.world_position;
     
-    if let Some(building_type) = planet_placing.building_type {
+    if let SelectionState::Placing(building_type) = planet_placing.state {
         let info = building_type.get_building_info();
         if let Some(closest) = planet_queries.find_closest_surface(mouse_pos) {
             if closest.distance < 20. {
@@ -264,7 +297,8 @@ fn handle_ghost(
     mouse_position: Res<MousePosition>,
     mut ghost_query: Query<(Entity, &mut Transform, &mut Visibility, &mut Sprite, &PlanetPlacingGhost)>,
     asset_server: Res<AssetServer>,
-    mut spawn_building_event: EventWriter<SpawnBuilding>
+    mut spawn_building_event: EventWriter<SpawnBuilding>,
+    mut planet_placing: ResMut<PlanetPlacing>,
 ) {
     let (ghost_entity, mut ghost_transform, mut ghost_visibility, mut ghost_sprite, ghost_state) = ghost_query.single_mut();
     let state = &ghost_state.state;
@@ -291,6 +325,7 @@ fn handle_ghost(
     if let GhostState::AttachedValid(building, planet, position) = state {
         if mouse_buttons.just_pressed(MouseButton::Left) {
             spawn_building_event.send(SpawnBuilding::new(*building, *planet, *position));
+            planet_placing.state = SelectionState::Nothing;
         }
     }
 }

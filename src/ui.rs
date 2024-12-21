@@ -2,18 +2,30 @@ use std::str::FromStr;
 
 use bevy::prelude::*;
 use bevy::*;
+use color::palettes::css::{self, RED};
 use render::render_resource::{AsBindGroup, ShaderRef};
 use utils::HashMap;
 
-use crate::{occupable::ResourceType, resources::Resources, storage::{SpaceResource, SpaceResources}};
+use crate::{
+    occupable::ResourceType, planet_placing::UpdateSelection, resources::Resources, storage::{SpaceResource, SpaceResources}
+};
 
 pub struct CustomUiPlugin;
 
 impl Plugin for CustomUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (update_resource_texts, update_resource_bars, update_planet_resources))
-            .add_systems(Startup, spawn_ui)
-            .add_event::<PlanetResourcesUpdate>();
+        app.add_systems(
+            Update,
+            (
+                button_system,
+                update_resource_texts,
+                update_resource_bars,
+                update_planet_resources,
+                update_selection_ui,
+            ),
+        )
+        .add_systems(Startup, spawn_ui)
+        .add_event::<PlanetResourcesUpdate>();
     }
 }
 
@@ -22,22 +34,28 @@ pub struct ResourceText {
     pub resource_type: ResourceType,
 }
 
-
 #[derive(Component)]
 pub struct PlanetResourcesText;
 
+#[derive(Component)]
+pub struct BuildingSelectionUI;
+
 #[derive(Event)]
 pub struct PlanetResourcesUpdate {
-    pub maybe_resources: Option<SpaceResources>
-} 
+    pub maybe_resources: Option<SpaceResources>,
+}
 
 impl PlanetResourcesUpdate {
     pub fn off() -> PlanetResourcesUpdate {
-        PlanetResourcesUpdate { maybe_resources: None }
+        PlanetResourcesUpdate {
+            maybe_resources: None,
+        }
     }
 
     pub fn on(resources: SpaceResources) -> PlanetResourcesUpdate {
-        PlanetResourcesUpdate { maybe_resources: Some(resources) }
+        PlanetResourcesUpdate {
+            maybe_resources: Some(resources),
+        }
     }
 }
 
@@ -56,63 +74,13 @@ impl UiMaterial for ProgressBarMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/progress_bar/shader.wgsl".into()
     }
-} 
+}
 
 fn spawn_ui(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut custom_materials: ResMut<Assets<ProgressBarMaterial>>,
 ) {
-    commands
-        .spawn(Node {
-            width: Val::Percent(100.),
-            flex_direction: FlexDirection::Row,
-            padding: UiRect::all(Val::Px(5.)),
-            column_gap: Val::Px(8.),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((
-                Node {
-                        width: Val::Px(32.0),
-                        height: Val::Px(32.0),
-                        ..default()
-                    },
-                ImageNode::new(asset_server.load("ui/icons/villager.png")),
-            ));
-            parent.spawn((
-                MaterialNode(custom_materials.add(ProgressBarMaterial { progress: 0. })),
-                ImageNode::new(asset_server.load("ui/progress_bar/ProgressBar.png")),
-                Node{
-                        width: Val::Px(160.0),
-                        height: Val::Px(32.0),
-                        ..default()
-                    },
-                ResourceBar {
-                    resource_type: ResourceType::Food,
-                },
-            ));
-            parent.spawn((
-                Node {
-                        width: Val::Px(32.0),
-                        height: Val::Px(32.0),
-                        ..default()
-                    },
-                ImageNode::new(asset_server.load("ui/icons/wood.png")),
-            ));
-            parent.spawn((
-                Label,
-                Text::new(""),
-                TextFont {
-                    font: asset_server.load("fonts/pixel.ttf"),
-                    font_size: 30.0,
-                    ..default()
-                },
-                ResourceText {
-                    resource_type: ResourceType::Wood,
-                },
-            ));
-        });
     commands.spawn((
         Text::new("5 Wood"),
         Node {
@@ -123,12 +91,96 @@ fn spawn_ui(
         },
         PlanetResourcesText,
     ));
+
+    commands
+        .spawn((
+            Node {
+                bottom: Val::Px(15.0),
+                right: Val::Px(15.0),
+                position_type: PositionType::Absolute,
+                flex_direction: FlexDirection::Column,
+                align_self: AlignSelf::Stretch,
+                ..default()
+            },
+            Visibility::Hidden,
+            BuildingSelectionUI
+        ))
+        .with_children(|parent| {
+            parent.spawn((Text::new("Informative Text"),));
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
+                        border: UiRect::all(Val::Px(4.0)),
+                        // horizontally center child text
+                        justify_content: JustifyContent::Center,
+                        // vertically center child text
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    BorderColor::from(Color::WHITE),
+                    BorderRadius::MAX,
+                ))
+                .with_child((
+                    Text::new("Upgrade"),
+                    TextFont {
+                        font: asset_server.load("fonts/pixel.ttf"),
+                        font_size: 20.0,
+                        ..default()
+                    },
+                ));
+        });
 }
 
 fn update_resource_texts(resources: Res<Resources>, mut texts: Query<(&mut Text, &ResourceText)>) {
     for (mut text, resource_text) in texts.iter_mut() {
         if let Some(amount) = resources.stored.get(&(resource_text.resource_type as i32)) {
             text.0 = amount.to_string();
+        }
+    }
+}
+
+fn update_selection_ui(
+    mut selection_events: EventReader<UpdateSelection>,
+    mut query: Query<&mut Visibility, With<BuildingSelectionUI>>
+) {
+    let mut selection = query.single_mut();
+    for event in selection_events.read() {
+        match event.selected {
+            Some(_) => {
+                *selection = Visibility::Inherited
+            },
+            None => {
+                *selection = Visibility::Hidden
+            },
+        }
+    }
+}
+
+fn button_system(
+    mut interaction_query: Query<
+        (&Interaction, &mut BackgroundColor, &Children),
+        (Changed<Interaction>, With<Button>),
+    >,
+    mut text_query: Query<(&mut Text, &mut TextColor)>,
+) {
+    for (interaction, mut color, children) in &mut interaction_query {
+        let (mut text, mut text_color) = text_query.get_mut(children[0]).unwrap();
+        match *interaction {
+            Interaction::Pressed => {
+                *text_color = TextColor(Color::BLACK);
+                *color = BackgroundColor(Color::WHITE);
+            }
+            Interaction::Hovered => {
+                *text_color = TextColor(Color::WHITE);
+                *color = BackgroundColor(Color::BLACK);
+            }
+            Interaction::None => {
+                *text_color = TextColor(Color::WHITE);
+                *color = BackgroundColor(Color::BLACK);
+            }
         }
     }
 }
@@ -155,7 +207,15 @@ fn update_planet_resources(
         for mut text in bars.iter_mut() {
             if let Some(resource) = &event.maybe_resources {
                 let mut string = "Available Resources:\n".to_owned();
-                string.push_str((resource.iter().map(|(k, v)| format!("{} {}\n", v, k)).collect::<Vec<_>>().join("\n") + "\n").as_str());
+                string.push_str(
+                    (resource
+                        .iter()
+                        .map(|(k, v)| format!("{} {}\n", v, k))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                        + "\n")
+                        .as_str(),
+                );
                 text.0 = string;
             } else {
                 text.0 = "".to_owned()
